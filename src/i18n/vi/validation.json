@@ -1,0 +1,9 @@
+{
+  "IS_STRING": "{property} phải là chuỗi",
+  "NOT_EMPTY": "{property} không được để trống",
+  "MIN_LENGTH": "{property} tối thiểu {constraints.0} ký tự",
+  "MAX_LENGTH": "{property} tối đa {constraints.0} ký tự",
+  "EMAIL_INVALID": "Email không hợp lệ",
+  "PASSWORD_MIN_LENGTH": "Mật khẩu tối thiểu 8 ký tự",
+  "PASSWORD_WEAK": "Mật khẩu phải có ít nhất 3 trong 4 loại: chữ thường, chữ hoa, số, ký tự đặc biệt"
+}
