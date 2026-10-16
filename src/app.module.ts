@@ -9,6 +9,13 @@ import {
   I18nService,
   QueryResolver,
 } from 'nestjs-i18n';
+import { ActivitiesModule } from './activities/activities.module.js';
+import { BookingsModule } from './bookings/bookings.module.js';
+import { FavoritesModule } from './favorites/favorites.module.js';
+import { FieldsModule } from './fields/fields.module.js';
+import { ReviewsModule } from './reviews/reviews.module.js';
+import { SettingsModule } from './settings/settings.module.js';
+import { VouchersModule } from './vouchers/vouchers.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
@@ -35,6 +42,13 @@ import { UsersModule } from './users/users.module.js';
     RedisModule,
     UsersModule,
     AuthModule,
+    VouchersModule,
+    SettingsModule,
+    ReviewsModule,
+    FieldsModule,
+    FavoritesModule,
+    BookingsModule,
+    ActivitiesModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -10,9 +10,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { UserResponse } from '../users/mappers/user-response.mapper.js';
 import { toUserResponse } from '../users/mappers/user-response.mapper.js';
 import type { User } from '../users/entities/user.entity.js';
-import { AuthService, type LoginResponse } from './auth.service.js';
+import { AuthService, type AuthTokens } from './auth.service.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import { LoginDto } from './dto/login.dto.js';
+import { LogoutDto } from './dto/logout.dto.js';
+import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 
@@ -32,8 +34,18 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   @ApiOperation({ summary: 'Login' })
-  login(@Body() dto: LoginDto): Promise<LoginResponse> {
+  login(@Body() dto: LoginDto): Promise<AuthTokens> {
     return this.authService.login(dto);
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Exchange a refresh token for a new access + refresh token (rotation)',
+  })
+  refresh(@Body() dto: RefreshTokenDto): Promise<AuthTokens> {
+    return this.authService.refresh(dto);
   }
 
   @Post('logout')
@@ -44,8 +56,9 @@ export class AuthController {
   logout(
     @CurrentUser('jti') jti: string,
     @CurrentUser('exp') exp: number,
+    @Body() dto: LogoutDto,
   ): Promise<void> {
-    return this.authService.logout(jti, exp);
+    return this.authService.logout(jti, exp, dto.refreshToken);
   }
 
   @Get('me')

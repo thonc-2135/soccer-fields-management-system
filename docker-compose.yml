@@ -50,7 +50,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-900}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
     ports:
       - '${PORT:-3000}:3000'
     volumes:
