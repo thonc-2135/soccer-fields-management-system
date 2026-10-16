@@ -36,7 +36,7 @@ ERD: [02-erd.drawio](02-erd.drawio) (mở bằng draw.io / diagrams.net). DB: My
 | field_prices | UNIQUE(field_id, start_time) |
 | bookings | (user_id, created_at DESC); (field_id, booking_date, status); (status, created_at) |
 | booking_slots | UNIQUE(field_id, slot_date, slot_start); (booking_id) |
-| reviews | UNIQUE(user_id, field_id); (field_id, created_at DESC) |
+| reviews | UNIQUE(user_id, field_id) WHERE deleted_at IS NULL (partial, để review đã xóa mềm không chặn review mới); (field_id, created_at DESC) |
 | comments | (review_id, parent_id, created_at) |
 | favorites | PK(user_id, field_id); (field_id) |
 | activities | (user_id, created_at DESC) |
@@ -48,3 +48,7 @@ ERD: [02-erd.drawio](02-erd.drawio) (mở bằng draw.io / diagrams.net). DB: My
 - `settings` dạng key-value hay cột riêng trong `fields` (surcharge theo từng sân)?
 - Voucher giới hạn theo user bằng `vouchers.per_user_limit` (NULL = không giới hạn): khi áp mã, đếm booking của user có `voucher_id` đó với status ≠ CANCELLED/REJECTED; không cần bảng riêng.
 
+## Ghi chú triển khai (B4)
+- Id dùng `integer identity` (không phải bigint) để TypeORM trả về number.
+- Thêm CHECK: giờ mở cửa 06:00–23:00, `start < end`, rating 1–5, `PERCENT <= 100`, số tiền >= 0.
+- Migration: `...100` auth tokens, `...200` fields + settings (seed `weekend_surcharge_percent=10`, `slot_minutes=90`), `...300` vouchers + bookings, `...400` reviews/comments/favorites/activities.

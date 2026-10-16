@@ -110,6 +110,54 @@ describe('Auth (e2e)', () => {
     expect(after.status).toBe(401);
   });
 
+  it('rotates refresh tokens and detects reuse', async () => {
+    const login = await http()
+      .post('/api/v1/auth/login')
+      .send({ email, password });
+    const first = login.body.data.refreshToken;
+
+    const rotated = await http()
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: first });
+    expect(rotated.status).toBe(200);
+    const second = rotated.body.data.refreshToken;
+    expect(second).not.toBe(first);
+    expect(rotated.body.data.accessToken).toBeDefined();
+
+    // replaying the old token fails and revokes the whole chain
+    const replay = await http()
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: first });
+    expect(replay.status).toBe(401);
+    const afterReplay = await http()
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: second });
+    expect(afterReplay.status).toBe(401);
+  });
+
+  it('logout also revokes the supplied refresh token', async () => {
+    const login = await http()
+      .post('/api/v1/auth/login')
+      .send({ email, password });
+    const { accessToken, refreshToken } = login.body.data;
+    await http()
+      .post('/api/v1/auth/logout')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ refreshToken })
+      .expect(200);
+    await http()
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken })
+      .expect(401);
+  });
+
+  it('rejects an unknown refresh token', async () => {
+    await http()
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: 'nope' })
+      .expect(401);
+  });
+
   it('requires a token for /me', async () => {
     expect((await http().get('/api/v1/auth/me')).status).toBe(401);
   });

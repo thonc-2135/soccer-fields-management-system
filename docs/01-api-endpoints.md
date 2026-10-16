@@ -55,10 +55,14 @@ Base URL: `/api/v1` · Auth: `Authorization: Bearer <accessToken>` · Ngôn ng�
 
 **1.4 POST /auth/login**
 - Body: `{ "email", "password" }`
-- 200: `{ "data": { "accessToken", "refreshToken", "expiresIn": 3600, "user": { "id", "name", "email", "role" } } }`
+- 200: `{ "data": { "accessToken", "refreshToken", "expiresIn": 900, "user": { "id", "name", "email", "role" } } }`
+- Access token (JWT) sống 15 phút (`JWT_EXPIRES_IN=900`); refresh token là chuỗi ngẫu nhiên, sống 7 ngày, chỉ lưu hash trong bảng `refresh_tokens`.
 - 401 sai thông tin; 403 chưa kích hoạt hoặc bị admin inactive.
 
-**1.5 POST /auth/refresh** Body `{ "refreshToken" }` → `{ "accessToken", "refreshToken" }`
+**1.5 POST /auth/refresh** Body `{ "refreshToken" }` → `{ "accessToken", "refreshToken", "expiresIn", "user" }`
+- Rotation: mỗi lần refresh thu hồi token cũ và cấp token mới. Dùng lại token đã thu hồi → 401 và thu hồi toàn bộ phiên của user đó.
+
+**1.6 POST /auth/logout** Body (tùy chọn) `{ "refreshToken" }` – đưa access token vào blacklist (Redis) và thu hồi refresh token nếu có gửi kèm.
 
 ---
 

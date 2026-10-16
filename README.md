@@ -33,6 +33,7 @@ JWT_SECRET=change-me docker compose --profile app up -d --build
 ## Conventions
 - Prefix `/api/v1`; success `{ success, data, meta? }`, error `{ success:false, statusCode, message, errors? }`.
 - Language: `Accept-Language: vi|en` or `?lang=`. Services throw i18n keys (`errors.EMAIL_TAKEN`), the global filter translates them.
+- Auth: access token 15 phút + refresh token 7 ngày (rotation, lưu hash trong DB); `POST /auth/refresh`.
 - Roles: `@UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.ADMIN)`.
 - Schema is changed only via hand-written migrations (`synchronize: false`).
 
