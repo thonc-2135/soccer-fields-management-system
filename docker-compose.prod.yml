@@ -40,7 +40,8 @@ services:
       DB_NAME: ${DB_NAME}
       REDIS_HOST: redis
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-900}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
     ports:
       - '3000:3000'
     volumes:

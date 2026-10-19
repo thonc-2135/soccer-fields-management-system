@@ -12,6 +12,7 @@ import { RedisService } from '../redis/redis.service.js';
 import type { User } from '../users/entities/user.entity.js';
 import { UsersService } from '../users/users.service.js';
 import { AuthService } from './auth.service.js';
+import { RefreshTokensService } from './refresh-tokens.service.js';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -19,8 +20,14 @@ describe('AuthService', () => {
     existsByEmail: vi.fn(),
     create: vi.fn(),
     findByEmailWithPassword: vi.fn(),
+    findById: vi.fn(),
   };
   const redis = { setWithTtl: vi.fn() };
+  const refreshTokens = {
+    issue: vi.fn().mockResolvedValue('refresh-token'),
+    consume: vi.fn(),
+    revoke: vi.fn(),
+  };
   const jwt = { sign: vi.fn().mockReturnValue('token') };
 
   const makeUser = async (over: Partial<User> = {}): Promise<User> =>
@@ -42,6 +49,7 @@ describe('AuthService', () => {
         { provide: UsersService, useValue: usersService },
         { provide: RedisService, useValue: redis },
         { provide: JwtService, useValue: jwt },
+        { provide: RefreshTokensService, useValue: refreshTokens },
         {
           provide: ConfigService,
           useValue: { get: (_: string, d: unknown) => d },
@@ -92,7 +100,11 @@ describe('AuthService', () => {
         email: 'a@x.com',
         password: 'Passw0rd!',
       });
-      expect(res).toMatchObject({ accessToken: 'token', expiresIn: 3600 });
+      expect(res).toMatchObject({
+        accessToken: 'token',
+        refreshToken: 'refresh-token',
+        expiresIn: 900,
+      });
     });
 
     it('rejects unknown email and wrong password with the same error', async () => {
@@ -118,9 +130,40 @@ describe('AuthService', () => {
     });
   });
 
+  describe('refresh', () => {
+    it('rotates: consumes the old token and issues a new pair', async () => {
+      refreshTokens.consume.mockResolvedValue(1);
+      usersService.findById.mockResolvedValue(await makeUser());
+      const res = await service.refresh({ refreshToken: 'old' });
+      expect(refreshTokens.consume).toHaveBeenCalledWith('old');
+      expect(res).toMatchObject({
+        accessToken: 'token',
+        refreshToken: 'refresh-token',
+      });
+    });
+
+    it('propagates an invalid/reused token error', async () => {
+      refreshTokens.consume.mockRejectedValue(new UnauthorizedException());
+      await expect(
+        service.refresh({ refreshToken: 'bad' }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('rejects when the account was deactivated meanwhile', async () => {
+      refreshTokens.consume.mockResolvedValue(1);
+      usersService.findById.mockResolvedValue(
+        await makeUser({ isActive: false }),
+      );
+      await expect(
+        service.refresh({ refreshToken: 'x' }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+  });
+
   it('logout blacklists the token until it expires', async () => {
     const exp = Math.floor(Date.now() / 1000) + 100;
-    await service.logout('jti-1', exp);
+    await service.logout('jti-1', exp, 'rt');
+    expect(refreshTokens.revoke).toHaveBeenCalledWith('rt');
     expect(redis.setWithTtl).toHaveBeenCalledWith(
       'blacklist:jti-1',
       '1',
