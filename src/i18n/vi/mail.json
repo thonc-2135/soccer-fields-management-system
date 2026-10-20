@@ -1,0 +1,8 @@
+{
+  "ACTIVATION_SUBJECT": "Kích hoạt tài khoản Soccer Fields",
+  "ACTIVATION_GREETING": "Xin chào {name},",
+  "ACTIVATION_BODY": "Cảm ơn bạn đã đăng ký. Hãy bấm vào liên kết bên dưới để kích hoạt tài khoản.",
+  "ACTIVATION_BUTTON": "Kích hoạt tài khoản",
+  "ACTIVATION_EXPIRES": "Liên kết có hiệu lực trong {hours} giờ.",
+  "ACTIVATION_IGNORE": "Nếu bạn không đăng ký tài khoản, hãy bỏ qua email này."
+}

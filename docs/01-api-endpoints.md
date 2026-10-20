@@ -51,7 +51,11 @@ Base URL: `/api/v1` · Auth: `Authorization: Bearer <accessToken>` · Ngôn ng�
 - 201: `{ "data": { "id": 1, "email": "a@x.com", "isActive": false } }`
 - 409 nếu email tồn tại.
 
-**1.2 GET /auth/activate** → 200 `{ "message": "Account activated" }`; 400 nếu token hết hạn/sai.
+**1.2 GET /auth/activate?token=** → 200 `{ "data": { "activated": true } }`; 400 nếu token sai, hết hạn (24h) hoặc đã dùng. Token chỉ dùng được 1 lần.
+
+**1.3 POST /auth/resend-activation** Body `{ "email" }` → luôn 200 `{ "data": { "sent": true } }` dù email có tồn tại/đã kích hoạt hay không (không lộ email nào đã đăng ký). Tối đa 1 lần/phút/email, vượt quá → 429. Gửi lại sẽ vô hiệu hóa link cũ.
+
+Mail được đẩy vào queue `mail` (Bull + Redis) với 3 lần retry; ngôn ngữ mail theo `Accept-Language` lúc đăng ký.
 
 **1.4 POST /auth/login**
 - Body: `{ "email", "password" }`

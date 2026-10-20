@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Query,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -12,10 +13,12 @@ import { toUserResponse } from '../users/mappers/user-response.mapper.js';
 import type { User } from '../users/entities/user.entity.js';
 import { AuthService, type AuthTokens } from './auth.service.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
+import { ActivateQueryDto } from './dto/activate-query.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { LogoutDto } from './dto/logout.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { ResendActivationDto } from './dto/resend-activation.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 
 @ApiTags('auth')
@@ -29,6 +32,27 @@ export class AuthController {
   })
   register(@Body() dto: RegisterDto): Promise<UserResponse> {
     return this.authService.register(dto);
+  }
+
+  @Get('activate')
+  @ApiOperation({ summary: 'Activate an account using the link sent by email' })
+  async activate(
+    @Query() query: ActivateQueryDto,
+  ): Promise<{ activated: true }> {
+    await this.authService.activate(query.token);
+    return { activated: true };
+  }
+
+  @Post('resend-activation')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Send the activation email again (max once per minute per email)',
+  })
+  async resendActivation(
+    @Body() dto: ResendActivationDto,
+  ): Promise<{ sent: true }> {
+    await this.authService.resendActivation(dto);
+    return { sent: true };
   }
 
   @Post('login')

@@ -31,6 +31,14 @@ services:
       timeout: 3s
       retries: 10
 
+  # Fake SMTP server + web UI to read emails sent in development
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - '${MAIL_PORT:-1025}:1025'
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+
   api:
     profiles: [app]
     build: .
@@ -39,6 +47,7 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
+      mailpit: { condition: service_started }
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -49,6 +58,9 @@ services:
       DB_NAME: ${DB_NAME:-soccer_fields}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-900}
       REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
