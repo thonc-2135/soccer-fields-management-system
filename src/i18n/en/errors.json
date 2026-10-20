@@ -1,0 +1,10 @@
+{
+  "INTERNAL_SERVER_ERROR": "Internal server error",
+  "VALIDATION_FAILED": "Validation failed",
+  "UNAUTHORIZED": "Unauthorized",
+  "FORBIDDEN": "You do not have permission to perform this action",
+  "EMAIL_TAKEN": "Email is already registered",
+  "INVALID_CREDENTIALS": "Email or password is incorrect",
+  "ACCOUNT_INACTIVE": "Account is not activated or has been deactivated",
+  "INVALID_REFRESH_TOKEN": "Refresh token is invalid or expired"
+}
