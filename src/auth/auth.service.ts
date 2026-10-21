@@ -31,6 +31,9 @@ import type { ResendActivationDto } from './dto/resend-activation.dto.js';
 import { RefreshTokensService } from './refresh-tokens.service.js';
 import type { JwtPayload } from './interfaces/jwt-payload.interface.js';
 
+/** Min seconds between two activation mails for the same address. */
+const RESEND_ACTIVATION_COOLDOWN_SECONDS = 60;
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
@@ -51,9 +54,6 @@ export class AuthService {
   ) {}
 
   private readonly logger = new Logger(AuthService.name);
-
-  /** Min seconds between two activation mails for the same address. */
-  private static readonly RESEND_COOLDOWN_SECONDS = 60;
 
   async register(dto: RegisterDto): Promise<UserResponse> {
     const email = dto.email.toLowerCase();
@@ -83,7 +83,7 @@ export class AuthService {
     const allowed = await this.redisService.setIfAbsent(
       `activation-mail:${email}`,
       '1',
-      AuthService.RESEND_COOLDOWN_SECONDS,
+      RESEND_ACTIVATION_COOLDOWN_SECONDS,
     );
     if (!allowed)
       throw new HttpException(
