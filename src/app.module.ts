@@ -43,6 +43,8 @@ import { UsersModule } from './users/users.module.js';
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
+        // e2e tests use their own prefix so a running dev server cannot consume their jobs
+        prefix: config.get<string>('BULL_PREFIX', 'bull'),
         redis: {
           host: config.get<string>('REDIS_HOST', 'localhost'),
           port: Number(config.get('REDIS_PORT', 6379)),

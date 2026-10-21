@@ -5,5 +5,11 @@
   "MAX_LENGTH": "{property} tối đa {constraints.0} ký tự",
   "EMAIL_INVALID": "Email không hợp lệ",
   "PASSWORD_MIN_LENGTH": "Mật khẩu tối thiểu 8 ký tự",
-  "PASSWORD_WEAK": "Mật khẩu phải có ít nhất 3 trong 4 loại: chữ thường, chữ hoa, số, ký tự đặc biệt"
+  "PASSWORD_WEAK": "Mật khẩu phải có ít nhất 3 trong 4 loại: chữ thường, chữ hoa, số, ký tự đặc biệt",
+  "IS_INT": "{property} phải là số nguyên",
+  "MIN": "{property} tối thiểu là {constraints.0}",
+  "MAX": "{property} tối đa là {constraints.0}",
+  "IS_DATE": "{property} phải là ngày (YYYY-MM-DD)",
+  "IS_TIME": "{property} phải là giờ (HH:mm)",
+  "IS_IN": "{property} phải là một trong: {constraints.0}"
 }

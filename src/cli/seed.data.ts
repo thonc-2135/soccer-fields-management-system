@@ -38,39 +38,39 @@ export const PRICE_WINDOWS = [
 
 export const FIELDS = [
   {
-    name: 'Sân Thống Nhất A1',
+    name: 'Sân Mỹ Đình A1',
     type: 'Sân 5',
-    address: '138 Nguyễn Thị Minh Khai, Quận 3, TP.HCM',
+    address: 'Đường Lê Đức Thọ, Mỹ Đình 1, Nam Từ Liêm, Hà Nội',
     description: 'Sân cỏ nhân tạo, có đèn chiếu sáng.',
   },
   {
-    name: 'Sân Thống Nhất A2',
+    name: 'Sân Mỹ Đình A2',
     type: 'Sân 5',
-    address: '138 Nguyễn Thị Minh Khai, Quận 3, TP.HCM',
+    address: 'Đường Lê Đức Thọ, Mỹ Đình 1, Nam Từ Liêm, Hà Nội',
     description: 'Sân cỏ nhân tạo, mái che.',
   },
   {
-    name: 'Sân Phú Thọ B1',
+    name: 'Sân Cầu Giấy B1',
     type: 'Sân 7',
-    address: '1 Lữ Gia, Quận 11, TP.HCM',
+    address: '12 Duy Tân, Dịch Vọng Hậu, Cầu Giấy, Hà Nội',
     description: 'Sân 7 cỏ nhân tạo thế hệ mới.',
   },
   {
-    name: 'Sân Phú Thọ B2',
+    name: 'Sân Cầu Giấy B2',
     type: 'Sân 7',
-    address: '1 Lữ Gia, Quận 11, TP.HCM',
+    address: '12 Duy Tân, Dịch Vọng Hậu, Cầu Giấy, Hà Nội',
     description: 'Sân 7, có khán đài nhỏ.',
   },
   {
-    name: 'Sân Bình Thạnh C1',
+    name: 'Sân Thanh Xuân C1',
     type: 'Sân 7',
-    address: '25 Xô Viết Nghệ Tĩnh, Bình Thạnh, TP.HCM',
+    address: '85 Nguyễn Trãi, Thượng Đình, Thanh Xuân, Hà Nội',
     description: 'Sân 7, bãi giữ xe rộng.',
   },
   {
-    name: 'Sân Quân Khu 7 D1',
+    name: 'Sân Long Biên D1',
     type: 'Sân 11',
-    address: '202 Hoàng Văn Thụ, Tân Bình, TP.HCM',
+    address: '1 Ngô Gia Tự, Đức Giang, Long Biên, Hà Nội',
     description: 'Sân 11 tiêu chuẩn, cỏ tự nhiên.',
   },
 ];

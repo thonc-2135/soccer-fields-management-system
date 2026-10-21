@@ -8,5 +8,8 @@
   "ACCOUNT_INACTIVE": "Tài khoản chưa được kích hoạt hoặc đã bị khóa",
   "INVALID_REFRESH_TOKEN": "Refresh token không hợp lệ hoặc đã hết hạn",
   "INVALID_ACTIVATION_TOKEN": "Liên kết kích hoạt không hợp lệ hoặc đã hết hạn",
-  "RESEND_TOO_SOON": "Vui lòng đợi một lúc trước khi yêu cầu gửi lại email kích hoạt"
+  "RESEND_TOO_SOON": "Vui lòng đợi một lúc trước khi yêu cầu gửi lại email kích hoạt",
+  "START_TIME_REQUIRES_DATE": "startTime chỉ dùng được kèm với date",
+  "INVALID_SLOT_START": "startTime không phải giờ bắt đầu của một khung giờ đặt sân",
+  "FIELD_NOT_FOUND": "Không tìm thấy sân"
 }
