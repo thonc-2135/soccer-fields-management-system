@@ -1,5 +1,5 @@
 # Used by the CD workflow on the server. Needs a .env next to it with
-# DB_USERNAME, DB_PASSWORD, DB_NAME, JWT_SECRET (see .env.example).
+# DB_USERNAME, DB_PASSWORD, DB_NAME, JWT_SECRET, APP_URL and MAIL_* (see .env.example).
 services:
   postgres:
     image: postgres:16-alpine
@@ -39,6 +39,13 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       REDIS_HOST: redis
+      APP_URL: ${APP_URL:?APP_URL is required}
+      MAIL_HOST: ${MAIL_HOST:?MAIL_HOST is required}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SECURE: ${MAIL_SECURE:-false}
+      MAIL_FROM: ${MAIL_FROM}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-900}
       REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}

@@ -6,5 +6,7 @@
   "EMAIL_TAKEN": "Email is already registered",
   "INVALID_CREDENTIALS": "Email or password is incorrect",
   "ACCOUNT_INACTIVE": "Account is not activated or has been deactivated",
-  "INVALID_REFRESH_TOKEN": "Refresh token is invalid or expired"
+  "INVALID_REFRESH_TOKEN": "Refresh token is invalid or expired",
+  "INVALID_ACTIVATION_TOKEN": "Activation link is invalid or has expired",
+  "RESEND_TOO_SOON": "Please wait before requesting another activation email"
 }

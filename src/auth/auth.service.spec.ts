@@ -11,6 +11,8 @@ import { hashPassword } from '../common/utils/password.util.js';
 import { RedisService } from '../redis/redis.service.js';
 import type { User } from '../users/entities/user.entity.js';
 import { UsersService } from '../users/users.service.js';
+import { MailQueueService } from '../mail/mail-queue.service.js';
+import { AccountTokensService } from './account-tokens.service.js';
 import { AuthService } from './auth.service.js';
 import { RefreshTokensService } from './refresh-tokens.service.js';
 
@@ -21,8 +23,14 @@ describe('AuthService', () => {
     create: vi.fn(),
     findByEmailWithPassword: vi.fn(),
     findById: vi.fn(),
+    findByEmail: vi.fn(),
   };
-  const redis = { setWithTtl: vi.fn() };
+  const redis = { setWithTtl: vi.fn(), setIfAbsent: vi.fn() };
+  const accountTokens = {
+    issueActivation: vi.fn().mockResolvedValue('activation-token'),
+    activate: vi.fn(),
+  };
+  const mailQueue = { sendActivation: vi.fn() };
   const refreshTokens = {
     issue: vi.fn().mockResolvedValue('refresh-token'),
     consume: vi.fn(),
@@ -43,6 +51,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    accountTokens.issueActivation.mockResolvedValue('activation-token');
     const moduleRef = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -50,6 +59,8 @@ describe('AuthService', () => {
         { provide: RedisService, useValue: redis },
         { provide: JwtService, useValue: jwt },
         { provide: RefreshTokensService, useValue: refreshTokens },
+        { provide: AccountTokensService, useValue: accountTokens },
+        { provide: MailQueueService, useValue: mailQueue },
         {
           provide: ConfigService,
           useValue: { get: (_: string, d: unknown) => d },
@@ -90,6 +101,78 @@ describe('AuthService', () => {
       );
       expect(res).not.toHaveProperty('password');
       expect(res.isActive).toBe(false);
+    });
+  });
+
+  describe('activation email', () => {
+    it('queues an activation mail with a link containing the token after register', async () => {
+      usersService.existsByEmail.mockResolvedValue(false);
+      usersService.create.mockImplementation(async (d) => ({
+        id: 2,
+        role: Role.USER,
+        isActive: false,
+        ...d,
+      }));
+      await service.register({
+        name: 'A',
+        email: 'a@x.com',
+        password: 'Passw0rd!',
+      });
+      expect(accountTokens.issueActivation).toHaveBeenCalledWith(2);
+      expect(mailQueue.sendActivation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'a@x.com',
+          link: expect.stringContaining(
+            '/api/v1/auth/activate?token=activation-token',
+          ),
+        }),
+      );
+    });
+
+    it('still registers the user when the queue is down', async () => {
+      usersService.existsByEmail.mockResolvedValue(false);
+      usersService.create.mockImplementation(async (d) => ({
+        id: 2,
+        role: Role.USER,
+        ...d,
+      }));
+      mailQueue.sendActivation.mockRejectedValueOnce(new Error('redis down'));
+      await expect(
+        service.register({
+          name: 'A',
+          email: 'a@x.com',
+          password: 'Passw0rd!',
+        }),
+      ).resolves.toMatchObject({ id: 2 });
+    });
+
+    it('resend: sends only to existing inactive accounts', async () => {
+      redis.setIfAbsent.mockResolvedValue(true);
+      usersService.findByEmail.mockResolvedValueOnce(
+        await makeUser({ isActive: false }),
+      );
+      await service.resendActivation({ email: 'a@x.com' });
+      expect(mailQueue.sendActivation).toHaveBeenCalledTimes(1);
+
+      usersService.findByEmail.mockResolvedValueOnce(
+        await makeUser({ isActive: true }),
+      );
+      await service.resendActivation({ email: 'a@x.com' });
+      usersService.findByEmail.mockResolvedValueOnce(null);
+      await expect(
+        service.resendActivation({ email: 'n@x.com' }),
+      ).resolves.toBeUndefined();
+      expect(mailQueue.sendActivation).toHaveBeenCalledTimes(1);
+    });
+
+    it('resend: is rate limited per email', async () => {
+      redis.setIfAbsent.mockResolvedValue(false);
+      await expect(
+        service.resendActivation({ email: 'a@x.com' }),
+      ).rejects.toMatchObject({
+        status: 429,
+      });
+      expect(mailQueue.sendActivation).not.toHaveBeenCalled();
     });
   });
 

@@ -22,8 +22,13 @@ export class UsersService {
       .getOne();
   }
 
+  /** Soft-deleted users count too: the unique index on email still applies to them. */
   existsByEmail(email: string): Promise<boolean> {
-    return this.users.existsBy({ email });
+    return this.users.exists({ where: { email }, withDeleted: true });
+  }
+
+  findByEmail(email: string): Promise<User | null> {
+    return this.users.findOne({ where: { email } });
   }
 
   create(

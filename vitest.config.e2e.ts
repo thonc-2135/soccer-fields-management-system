@@ -7,5 +7,7 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
+    // all files share one Postgres/Redis and the Bull `mail` queue
+    fileParallelism: false,
   },
 });

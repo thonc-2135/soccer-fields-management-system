@@ -1,0 +1,8 @@
+{
+  "ACTIVATION_SUBJECT": "Activate your Soccer Fields account",
+  "ACTIVATION_GREETING": "Hello {name},",
+  "ACTIVATION_BODY": "Thanks for signing up. Click the link below to activate your account.",
+  "ACTIVATION_BUTTON": "Activate account",
+  "ACTIVATION_EXPIRES": "This link expires in {hours} hours.",
+  "ACTIVATION_IGNORE": "If you did not create an account, you can ignore this email."
+}
