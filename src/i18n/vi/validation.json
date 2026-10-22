@@ -11,5 +11,6 @@
   "MAX": "{property} tối đa là {constraints.0}",
   "IS_DATE": "{property} phải là ngày (YYYY-MM-DD)",
   "IS_TIME": "{property} phải là giờ (HH:mm)",
-  "IS_IN": "{property} phải là một trong: {constraints.0}"
+  "IS_IN": "{property} phải là một trong: {constraints.0}",
+  "IS_ARRAY": "{property} phải là một danh sách"
 }

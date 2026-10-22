@@ -11,5 +11,21 @@
   "RESEND_TOO_SOON": "Vui lòng đợi một lúc trước khi yêu cầu gửi lại email kích hoạt",
   "START_TIME_REQUIRES_DATE": "startTime chỉ dùng được kèm với date",
   "INVALID_SLOT_START": "startTime không phải giờ bắt đầu của một khung giờ đặt sân",
-  "FIELD_NOT_FOUND": "Không tìm thấy sân"
+  "FIELD_NOT_FOUND": "Không tìm thấy sân",
+  "FIELD_TYPE_REQUIRED": "Cần gửi typeId hoặc type",
+  "FIELD_TYPE_AMBIGUOUS": "Chỉ gửi một trong hai: typeId hoặc type",
+  "FIELD_TYPE_NOT_FOUND": "Không tìm thấy loại sân",
+  "FIELD_TYPE_NAME_TAKEN": "Tên loại sân đã tồn tại",
+  "FIELD_TYPE_IN_USE": "Loại sân đang được dùng bởi các sân hiện có",
+  "INVALID_OPENING_HOURS": "Giờ mở cửa phải trong khoảng 06:00–23:00 và giờ mở phải trước giờ đóng",
+  "PRICE_WINDOWS_EMPTY": "Cần ít nhất một khung giá",
+  "PRICE_WINDOWS_INVALID_RANGE": "Khung giá phải bắt đầu trước khi kết thúc",
+  "PRICE_WINDOWS_OVERLAP": "Các khung giá không được chồng lấn",
+  "PRICE_WINDOWS_GAP": "Các khung giá không được để hở",
+  "PRICE_WINDOWS_OUT_OF_RANGE": "Các khung giá phải phủ đúng giờ mở cửa",
+  "FIELD_HAS_ACTIVE_BOOKINGS": "Không thể xóa sân đang có đơn đặt chờ xử lý hoặc đã xác nhận trong tương lai",
+  "INVALID_IMAGE": "Chỉ chấp nhận ảnh JPEG, PNG hoặc WebP tối đa 5MB",
+  "NO_FILES": "Chưa tải ảnh nào lên (dùng trường `images`)",
+  "TOO_MANY_IMAGES": "Mỗi sân tối đa 10 ảnh",
+  "IMAGE_NOT_FOUND": "Không tìm thấy ảnh"
 }

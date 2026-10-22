@@ -11,5 +11,21 @@
   "RESEND_TOO_SOON": "Please wait before requesting another activation email",
   "START_TIME_REQUIRES_DATE": "startTime can only be used together with date",
   "INVALID_SLOT_START": "startTime is not the start of a bookable slot",
-  "FIELD_NOT_FOUND": "Field not found"
+  "FIELD_NOT_FOUND": "Field not found",
+  "FIELD_TYPE_REQUIRED": "Provide either typeId or type",
+  "FIELD_TYPE_AMBIGUOUS": "Provide only one of typeId or type",
+  "FIELD_TYPE_NOT_FOUND": "Field type not found",
+  "FIELD_TYPE_NAME_TAKEN": "A field type with this name already exists",
+  "FIELD_TYPE_IN_USE": "This field type is used by existing fields",
+  "INVALID_OPENING_HOURS": "Opening hours must be between 06:00 and 23:00 and open time must be before close time",
+  "PRICE_WINDOWS_EMPTY": "At least one price window is required",
+  "PRICE_WINDOWS_INVALID_RANGE": "A price window must start before it ends",
+  "PRICE_WINDOWS_OVERLAP": "Price windows must not overlap",
+  "PRICE_WINDOWS_GAP": "Price windows must not leave gaps",
+  "PRICE_WINDOWS_OUT_OF_RANGE": "Price windows must cover exactly the opening hours",
+  "FIELD_HAS_ACTIVE_BOOKINGS": "Cannot delete a field that has pending or approved upcoming bookings",
+  "INVALID_IMAGE": "Only JPEG, PNG or WebP images up to 5MB are allowed",
+  "NO_FILES": "No image was uploaded (use the `images` field)",
+  "TOO_MANY_IMAGES": "A field can have at most 10 images",
+  "IMAGE_NOT_FOUND": "Image not found"
 }

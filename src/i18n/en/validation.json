@@ -11,5 +11,6 @@
   "MAX": "{property} must be at most {constraints.0}",
   "IS_DATE": "{property} must be a date (YYYY-MM-DD)",
   "IS_TIME": "{property} must be a time (HH:mm)",
-  "IS_IN": "{property} must be one of: {constraints.0}"
+  "IS_IN": "{property} must be one of: {constraints.0}",
+  "IS_ARRAY": "{property} must be an array"
 }

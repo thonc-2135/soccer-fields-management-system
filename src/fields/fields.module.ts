@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { FilesModule } from '../files/files.module.js';
 import { SettingsModule } from '../settings/settings.module.js';
+import { AdminFieldTypesController } from './admin/admin-field-types.controller.js';
+import { AdminFieldTypesService } from './admin/admin-field-types.service.js';
+import { AdminFieldsController } from './admin/admin-fields.controller.js';
+import { AdminFieldsService } from './admin/admin-fields.service.js';
 import { FieldTypesController } from './field-types.controller.js';
 import { FieldImage } from './entities/field-image.entity.js';
 import { FieldPrice } from './entities/field-price.entity.js';
@@ -13,9 +18,15 @@ import { FieldsService } from './fields.service.js';
   imports: [
     TypeOrmModule.forFeature([Field, FieldType, FieldImage, FieldPrice]),
     SettingsModule,
+    FilesModule,
   ],
-  controllers: [FieldsController, FieldTypesController],
-  providers: [FieldsService],
+  controllers: [
+    FieldsController,
+    FieldTypesController,
+    AdminFieldsController,
+    AdminFieldTypesController,
+  ],
+  providers: [FieldsService, AdminFieldsService, AdminFieldTypesService],
   exports: [TypeOrmModule, FieldsService],
 })
 export class FieldsModule {}
