@@ -94,9 +94,19 @@ export class FieldsService {
     };
   }
 
-  async findOne(id: number, userId?: number): Promise<FieldDetail> {
+  /** Public detail: only ACTIVE, non-deleted fields. */
+  findOne(id: number, userId?: number): Promise<FieldDetail> {
+    return this.findDetail(id, userId, true);
+  }
+
+  /** `onlyActive = false` is for admins, who can also see INACTIVE fields. */
+  async findDetail(
+    id: number,
+    userId?: number,
+    onlyActive = true,
+  ): Promise<FieldDetail> {
     const field = await this.fields.findOne({
-      where: { id, status: FieldStatus.ACTIVE },
+      where: onlyActive ? { id, status: FieldStatus.ACTIVE } : { id },
       relations: { type: true },
     });
     if (!field) throw new NotFoundException('errors.FIELD_NOT_FOUND');
@@ -237,7 +247,7 @@ export class FieldsService {
     );
   }
 
-  private async thumbnailsFor(ids: number[]): Promise<Map<number, string>> {
+  async thumbnailsFor(ids: number[]): Promise<Map<number, string>> {
     if (!ids.length) return new Map();
     // first image per field: the thumbnail if any, otherwise the lowest sort_order
     const rows: { field_id: number; url: string }[] =

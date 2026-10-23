@@ -216,29 +216,36 @@ Ghi log bằng event (`@nestjs/event-emitter`) từ các service, không chặn 
 
 | # | Method | Endpoint | Quyền | Mô tả |
 |---|--------|----------|-------|-------|
-| 8.1 | POST | `/admin/fields` | 🛡 | Tạo sân (kèm loại sân + bảng giá) |
-| 8.2 | GET | `/admin/fields` | 🛡 | Danh sách (gồm cả sân inactive) |
+| 8.1 | POST | `/admin/fields` | 🛡 | Tạo sân (kèm loại sân mới hoặc `typeId` + bảng giá) |
+| 8.2 | GET | `/admin/fields` | 🛡 | Danh sách (gồm cả sân INACTIVE): `keyword`, `status`, `typeId`, `page`, `limit` |
 | 8.3 | GET | `/admin/fields/:id` | 🛡 | Chi tiết |
-| 8.4 | PATCH | `/admin/fields/:id` | 🛡 | Cập nhật |
-| 8.5 | DELETE | `/admin/fields/:id` | 🛡 | Xóa (soft delete) |
-| 8.6 | POST | `/admin/fields/:id/images` | 🛡 | Upload nhiều ảnh (`multipart/form-data`, field `images[]`, max 10, ≤ 5MB, jpg/png/webp) |
-| 8.7 | DELETE | `/admin/fields/:id/images/:imageId` | 🛡 | Xóa 1 ảnh |
+| 8.4 | PATCH | `/admin/fields/:id` | 🛡 | Cập nhật; gửi kèm `prices` thì thay bảng giá trong cùng transaction |
+| 8.5 | DELETE | `/admin/fields/:id` | 🛡 | Xóa mềm (204) |
+| 8.6 | POST | `/admin/fields/:id/images` | 🛡 | Upload nhiều ảnh (`multipart/form-data`, field `images`) |
+| 8.7 | DELETE | `/admin/fields/:id/images/:imageId` | 🛡 | Xóa 1 ảnh (xóa cả file; ảnh tiếp theo lên làm thumbnail nếu cần) |
 | 8.8 | PUT | `/admin/fields/:id/prices` | 🛡 | Thay bảng giá theo khung giờ |
-| 8.9 | GET | `/admin/fields/:id/schedule?date=` | 🛡 | Lịch đặt: giờ đã đặt, giờ rảnh |
-| 8.10 | CRUD | `/admin/field-types` | 🛡 | Quản lý loại sân |
+| 8.9 | PATCH | `/admin/fields/:id/images/:imageId/thumbnail` | 🛡 | Đặt ảnh đại diện |
+| 8.10 | POST/PATCH/DELETE | `/admin/field-types[/:id]` | 🛡 | Quản lý loại sân (xem `GET /field-types` ở mục 2) |
 
 **8.1 Body**
 ```json
-{ "name": "Sân A1", "description": "...", "address": "...", "openTime": "06:00", "closeTime": "23:00",
+{ "name": "Sân Mỹ Đình A1", "description": "...", "address": "Đường Lê Đức Thọ, Nam Từ Liêm, Hà Nội",
+  "openTime": "06:00", "closeTime": "23:00", "status": "ACTIVE",
   "typeId": 1,
-  "type": { "name": "Sân 7", "capacity": 14 },
+  "type": { "name": "Sân 7", "capacity": 14, "description": "..." },
   "prices": [ { "startTime": "06:00", "endTime": "17:00", "price": 200000 },
               { "startTime": "17:00", "endTime": "21:00", "price": 350000 },
-              { "startTime": "21:00", "endTime": "23:00", "price": 200000 } ] }
+              { "startTime": "21:00", "endTime": "23:00", "price": 250000 } ] }
 ```
-(`typeId` hoặc `type` – tạo loại sân mới cùng lúc.) Validate: khung giá không chồng lấn, phủ kín giờ mở cửa; `openTime ≥ 06:00`, `closeTime ≤ 23:00`. Giá cuối tuần không nhập tay, hệ thống tự cộng 10%.
-**8.5**: 422 nếu còn đơn `PENDING` hoặc `APPROVED` ở tương lai.
-**8.9 Response**: giống 2.3 nhưng slot kèm thông tin booking (`bookingId`, `user`).
+- Gửi **đúng một** trong `typeId` hoặc `type` (cả hai/không có → 400; `typeId` không tồn tại → 404; tên loại trùng → 409).
+- `openTime` ≥ 06:00, `closeTime` ≤ 23:00, mở < đóng (mặc định 06:00–23:00), nếu không → 422.
+- `prices` phải **phủ kín** giờ mở cửa: bắt đầu đúng `openTime`, kết thúc đúng `closeTime`, không hở, không chồng lấn, mỗi khung `start < end`, giá nguyên ≥ 0 → vi phạm trả 422 (`PRICE_WINDOWS_GAP/OVERLAP/OUT_OF_RANGE/...`). Phụ thu cuối tuần +10% không nhập tay (lấy từ `settings`).
+- Đổi `openTime`/`closeTime` ở PATCH mà bảng giá hiện tại không còn khớp → 422, cần gửi `prices` mới cùng request.
+- Response 201: chi tiết sân như `GET /fields/:id` (admin xem được cả INACTIVE).
+
+**8.5 DELETE**: 422 `FIELD_HAS_ACTIVE_BOOKINGS` nếu còn đơn `PENDING`/`APPROVED` có `booking_date >= hôm nay`; còn lại xóa mềm (đơn đã hủy/từ chối/đã qua không chặn). Xóa rồi thì cả trang công khai và admin đều 404.
+
+**8.6 Upload ảnh**: tối đa 10 file/request, mỗi file ≤ 5MB, chỉ JPEG/PNG/WebP — server kiểm tra nội dung thật của file (không tin mimetype do client gửi). Tối đa 10 ảnh/sân (vượt → 422). Ảnh đầu tiên của sân tự thành thumbnail. File lưu ở `public/uploads/fields/<fieldId>/<uuid>.<ext>`, truy cập qua `/public/uploads/...`. Lỗi: không có file 400, file không hợp lệ 400, quá 5MB 413.
 
 ## 9. Admin – Users
 
