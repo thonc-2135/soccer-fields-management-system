@@ -84,9 +84,10 @@ Mail được đẩy vào queue `mail` (Bull + Redis) với 3 lần retry; ngôn
 - `keyword` (tìm theo tên/địa chỉ/mô tả)
 - `typeId` (loại sân; có thể nhiều: `typeId=1,2`)
 - `minPrice`, `maxPrice` (giá/giờ)
-- `date` (YYYY-MM-DD) + `startTime`, `endTime` (HH:mm) → chỉ sân còn trống trong khung này
+- `date` (YYYY-MM-DD) → chỉ sân còn ít nhất một slot trống ngày đó; thêm `startTime` (HH:mm, đầu một slot 90 phút như `18:00`, `19:30`) → chỉ sân mà đúng slot đó còn trống. `startTime` phải đi kèm `date`.
 - `minRating`
-- `page`, `limit`, `sort` (`price:asc`, `rating:desc`, `createdAt:desc`)
+- `page` (mặc định 1), `limit` (mặc định 10, tối đa 50), `sort` ∈ `createdAt:desc` (mặc định), `name:asc`, `price:asc`, `price:desc`, `rating:desc`
+- `minPrice`/`maxPrice` so với khoảng giá của sân (rẻ nhất → đắt nhất): giữ sân có `giá cao nhất >= minPrice` và `giá rẻ nhất <= maxPrice`. Sắp xếp theo giá dùng giá rẻ nhất; sân chưa có bảng giá xếp cuối.
 - Response item:
 ```json
 { "id": 1, "name": "Sân A1", "address": "...", "type": { "id": 1, "name": "Sân 7" },

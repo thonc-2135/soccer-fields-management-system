@@ -29,6 +29,8 @@ export class FakeMailer {
 
 // Requires Postgres + Redis (see docker-compose.yml). DB_NAME defaults to the *_test database.
 process.env.DB_NAME ??= 'soccer_fields_test';
+// separate Bull namespace: a dev server on the same Redis must not pick up the tests' mail jobs
+process.env.BULL_PREFIX ??= 'bull-e2e';
 
 export async function createTestApp(): Promise<{
   app: INestApplication;

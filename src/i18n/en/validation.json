@@ -5,5 +5,11 @@
   "MAX_LENGTH": "{property} must be at most {constraints.0} characters",
   "EMAIL_INVALID": "Email is not valid",
   "PASSWORD_MIN_LENGTH": "Password must be at least 8 characters",
-  "PASSWORD_WEAK": "Password must contain at least 3 of: lowercase, uppercase, digit, special character"
+  "PASSWORD_WEAK": "Password must contain at least 3 of: lowercase, uppercase, digit, special character",
+  "IS_INT": "{property} must be an integer",
+  "MIN": "{property} must be at least {constraints.0}",
+  "MAX": "{property} must be at most {constraints.0}",
+  "IS_DATE": "{property} must be a date (YYYY-MM-DD)",
+  "IS_TIME": "{property} must be a time (HH:mm)",
+  "IS_IN": "{property} must be one of: {constraints.0}"
 }

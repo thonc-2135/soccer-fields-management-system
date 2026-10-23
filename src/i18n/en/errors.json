@@ -8,5 +8,8 @@
   "ACCOUNT_INACTIVE": "Account is not activated or has been deactivated",
   "INVALID_REFRESH_TOKEN": "Refresh token is invalid or expired",
   "INVALID_ACTIVATION_TOKEN": "Activation link is invalid or has expired",
-  "RESEND_TOO_SOON": "Please wait before requesting another activation email"
+  "RESEND_TOO_SOON": "Please wait before requesting another activation email",
+  "START_TIME_REQUIRES_DATE": "startTime can only be used together with date",
+  "INVALID_SLOT_START": "startTime is not the start of a bookable slot",
+  "FIELD_NOT_FOUND": "Field not found"
 }
