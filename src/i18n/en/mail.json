@@ -4,5 +4,8 @@
   "ACTIVATION_BODY": "Thanks for signing up. Click the link below to activate your account.",
   "ACTIVATION_BUTTON": "Activate account",
   "ACTIVATION_EXPIRES": "This link expires in {hours} hours.",
-  "ACTIVATION_IGNORE": "If you did not create an account, you can ignore this email."
+  "ACTIVATION_IGNORE": "If you did not create an account, you can ignore this email.",
+  "GREETING": "Hello {name},",
+  "BOOKING_CANCELLED_SUBJECT": "Your booking has been cancelled",
+  "BOOKING_CANCELLED_BODY": "Your booking for {field} on {date} ({start} - {end}) has been cancelled as you requested."
 }

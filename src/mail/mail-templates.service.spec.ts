@@ -55,4 +55,19 @@ describe('MailTemplatesService', () => {
     expect(mail.html).toContain('&lt;script&gt;');
     expect(mail.html).toContain('a=1&amp;b=&quot;2&quot;');
   });
+
+  it('renders the booking cancellation mail with the booking details', () => {
+    const mail = service.bookingCancelled({
+      to: 'a@x.com',
+      name: 'An',
+      fieldName: 'Sân Mỹ Đình A1',
+      date: '2030-01-15',
+      startTime: '18:00',
+      endTime: '19:30',
+      lang: 'en',
+    });
+    expect(mail.subject).toContain('en:mail.BOOKING_CANCELLED_SUBJECT');
+    expect(mail.text).toContain('en:mail.BOOKING_CANCELLED_BODY');
+    expect(mail.html).toContain('<p>');
+  });
 });

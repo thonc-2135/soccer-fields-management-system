@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ClockModule } from '../common/clock/clock.module.js';
 import { typeOrmConfig } from '../config/typeorm.config.js';
 import { FieldsModule } from '../fields/fields.module.js';
 import { UsersModule } from '../users/users.module.js';
@@ -12,6 +13,7 @@ import { SeedService } from './seed.service.js';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({ useFactory: typeOrmConfig }),
+    ClockModule,
     UsersModule,
     FieldsModule,
     VouchersModule,

@@ -20,6 +20,7 @@ import { VouchersModule } from './vouchers/vouchers.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
+import { ClockModule } from './common/clock/clock.module.js';
 import { typeOrmConfig } from './config/typeorm.config.js';
 import { HealthController } from './health/health.controller.js';
 import { RedisModule } from './redis/redis.module.js';
@@ -57,6 +58,7 @@ import { UsersModule } from './users/users.module.js';
         },
       }),
     }),
+    ClockModule,
     RedisModule,
     UsersModule,
     AuthModule,

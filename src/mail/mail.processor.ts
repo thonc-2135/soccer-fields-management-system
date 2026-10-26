@@ -5,8 +5,13 @@ import {
   MAIL_QUEUE,
   MailJob,
   type ActivationMailData,
+  type BookingCancelledMailData,
+  type MailJobData,
 } from './mail.constants.js';
-import { MailTemplatesService } from './mail-templates.service.js';
+import {
+  MailTemplatesService,
+  type MailContent,
+} from './mail-templates.service.js';
 import { MailerService } from './mailer.service.js';
 
 @Injectable()
@@ -21,27 +26,38 @@ export class MailProcessor {
 
   @Process(MailJob.ACTIVATION)
   async sendActivation(job: Job<ActivationMailData>): Promise<void> {
-    try {
-      await this.mailer.send({
-        to: job.data.to,
-        ...this.templates.activation(job.data),
-      });
-    } catch (err) {
-      this.logger.warn(
-        `Activation mail to ${job.data.to} failed (attempt ${job.attemptsMade + 1}/${job.opts.attempts ?? 1}): ${(err as Error).message}`,
-      );
-      throw err; // rethrow so Bull retries with the configured backoff
-    }
-    this.logger.log(`Activation mail sent to ${job.data.to}`);
+    await this.deliver(job, this.templates.activation(job.data));
+  }
+
+  @Process(MailJob.BOOKING_CANCELLED)
+  async sendBookingCancelled(
+    job: Job<BookingCancelledMailData>,
+  ): Promise<void> {
+    await this.deliver(job, this.templates.bookingCancelled(job.data));
   }
 
   /** Called after every failed attempt; only the last one is an actual give-up. */
   @OnQueueFailed()
-  onFailed(job: Job<ActivationMailData>, err: Error): void {
+  onFailed(job: Job<MailJobData>, error: Error): void {
     if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
       this.logger.error(
-        `Giving up on ${job.name} job ${job.id} for ${job.data.to} after ${job.attemptsMade} attempts: ${err.message}`,
+        `Giving up on ${job.name} job ${job.id} for ${job.data.to} after ${job.attemptsMade} attempts: ${error.message}`,
       );
     }
+  }
+
+  private async deliver(
+    job: Job<MailJobData>,
+    content: MailContent,
+  ): Promise<void> {
+    try {
+      await this.mailer.send({ to: job.data.to, ...content });
+    } catch (error) {
+      this.logger.warn(
+        `${job.name} mail to ${job.data.to} failed (attempt ${job.attemptsMade + 1}/${job.opts.attempts ?? 1}): ${(error as Error).message}`,
+      );
+      throw error; // rethrow so Bull retries with the configured backoff
+    }
+    this.logger.log(`${job.name} mail sent to ${job.data.to}`);
   }
 }
