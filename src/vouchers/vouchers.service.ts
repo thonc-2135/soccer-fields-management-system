@@ -7,12 +7,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { ClockService } from '../common/clock/clock.service.js';
 import { Voucher } from './entities/voucher.entity.js';
+import type { ValidateVoucherDto } from './dto/validate-voucher.dto.js';
+import type {
+  VoucherEvaluation,
+  VoucherValidation,
+} from './types/voucher.types.js';
 import { computeDiscount } from './voucher-discount.util.js';
-
-export interface VoucherEvaluation {
-  voucher: Voucher;
-  discount: number;
-}
 
 @Injectable()
 export class VouchersService {
@@ -20,6 +20,26 @@ export class VouchersService {
     @InjectRepository(Voucher) private readonly vouchers: Repository<Voucher>,
     private readonly clock: ClockService,
   ) {}
+
+  /** Response of `POST /vouchers/validate`: the voucher checked against the order amount. */
+  async validate(
+    dto: ValidateVoucherDto,
+    userId: number,
+  ): Promise<VoucherValidation> {
+    const { voucher, discount } = await this.evaluate(
+      dto.code,
+      dto.amount,
+      userId,
+    );
+    return {
+      valid: true,
+      code: voucher.code,
+      type: voucher.type,
+      value: voucher.value,
+      discount,
+      total: dto.amount - discount,
+    };
+  }
 
   /**
    * Checks every rule of a voucher for `userId` and an order of `subtotal` VND.

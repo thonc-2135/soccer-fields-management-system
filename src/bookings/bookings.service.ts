@@ -34,7 +34,6 @@ import {
   sumAmounts,
   toHHmm,
   toMinutes,
-  type PriceItem,
 } from './booking-calendar.js';
 import type { AvailabilityQueryDto } from './dto/availability-query.dto.js';
 import type { CreateBookingDto } from './dto/create-booking.dto.js';
@@ -48,38 +47,10 @@ import {
   type BookingDetail,
   type BookingListItem,
 } from './mappers/booking-response.mapper.js';
+import type { BookingQuote, Quote, SlotStatus } from './types/booking.types.js';
 
 export const MAX_ADVANCE_DAYS = 60;
 const UNIQUE_VIOLATION = '23505';
-
-/** The priced, validated outcome of a booking request, before anything is stored. */
-interface Quote {
-  field: Field;
-  date: string;
-  startTime: string;
-  endTime: string;
-  slotStarts: string[];
-  items: PriceItem[];
-  subtotal: number;
-  isWeekend: boolean;
-  weekendSurchargePercent: number;
-}
-
-export interface BookingQuote {
-  field: { id: number; name: string; address: string };
-  date: string;
-  startTime: string;
-  endTime: string;
-  isWeekend: boolean;
-  weekendSurchargePercent: number;
-  priceBreakdown: PriceItem[];
-  subtotal: number;
-  discount: number;
-  total: number;
-  voucher: { code: string } | null;
-}
-
-export type SlotStatus = 'AVAILABLE' | 'PENDING' | 'BOOKED' | 'PAST';
 
 @Injectable()
 export class BookingsService {

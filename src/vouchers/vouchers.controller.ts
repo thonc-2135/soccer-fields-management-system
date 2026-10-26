@@ -4,6 +4,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import type { User } from '../users/entities/user.entity.js';
 import { ValidateVoucherDto } from './dto/validate-voucher.dto.js';
+import type { VoucherValidation } from './types/voucher.types.js';
 import { VouchersService } from './vouchers.service.js';
 
 @ApiTags('vouchers')
@@ -18,19 +19,10 @@ export class VouchersController {
   @ApiOperation({
     summary: 'Check a voucher against an order amount and get the discount',
   })
-  async validate(@Body() dto: ValidateVoucherDto, @CurrentUser() user: User) {
-    const { voucher, discount } = await this.service.evaluate(
-      dto.code,
-      dto.amount,
-      user.id,
-    );
-    return {
-      valid: true,
-      code: voucher.code,
-      type: voucher.type,
-      value: voucher.value,
-      discount,
-      total: dto.amount - discount,
-    };
+  validate(
+    @Body() dto: ValidateVoucherDto,
+    @CurrentUser() user: User,
+  ): Promise<VoucherValidation> {
+    return this.service.validate(dto, user.id);
   }
 }
