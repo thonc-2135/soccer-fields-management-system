@@ -5,6 +5,7 @@ import {
   MAIL_QUEUE,
   MailJob,
   type ActivationMailData,
+  type BookingCancelledMailData,
 } from './mail.constants.js';
 
 /** Producer side: request handlers only enqueue, the processor does the SMTP work. */
@@ -14,5 +15,9 @@ export class MailQueueService {
 
   async sendActivation(data: ActivationMailData): Promise<void> {
     await this.queue.add(MailJob.ACTIVATION, data);
+  }
+
+  async sendBookingCancelled(data: BookingCancelledMailData): Promise<void> {
+    await this.queue.add(MailJob.BOOKING_CANCELLED, data);
   }
 }

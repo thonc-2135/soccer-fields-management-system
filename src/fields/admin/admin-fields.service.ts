@@ -182,8 +182,14 @@ export class AdminFieldsService {
   /** Soft delete; refused while a PENDING / APPROVED booking in the future still depends on it. */
   async remove(id: number): Promise<void> {
     await this.getField(id);
-    await this.dataSource.transaction(async (m) => {
-      const blocking = await m.query(
+    await this.dataSource.transaction(async (manager) => {
+      // booking creation share-locks the field row, so after this lock every in-flight booking is visible below
+      await manager
+        .createQueryBuilder(Field, 'field')
+        .where('field.id = :id', { id })
+        .setLock('pessimistic_write')
+        .getOne();
+      const blocking = await manager.query(
         `SELECT 1 FROM bookings
          WHERE field_id = $1 AND status IN ('PENDING', 'APPROVED') AND booking_date >= CURRENT_DATE
          LIMIT 1`,
@@ -193,7 +199,7 @@ export class AdminFieldsService {
         throw new UnprocessableEntityException(
           'errors.FIELD_HAS_ACTIVE_BOOKINGS',
         );
-      await m.softDelete(Field, { id });
+      await manager.softDelete(Field, { id });
     });
   }
 

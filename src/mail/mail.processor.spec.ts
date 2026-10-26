@@ -12,7 +12,7 @@ describe('MailProcessor', () => {
   let warn: MockInstance;
   let error: MockInstance;
   const mailer = { send: vi.fn() };
-  const templates = { activation: vi.fn() };
+  const templates = { activation: vi.fn(), bookingCancelled: vi.fn() };
   const data: ActivationMailData = {
     to: 'a@x.com',
     name: 'An',
@@ -35,6 +35,11 @@ describe('MailProcessor', () => {
       subject: 'S',
       text: 'T',
       html: 'H',
+    });
+    templates.bookingCancelled.mockReturnValue({
+      subject: 'C',
+      text: 'CT',
+      html: 'CH',
     });
     warn = vi
       .spyOn(Logger.prototype, 'warn')
@@ -60,6 +65,30 @@ describe('MailProcessor', () => {
       subject: 'S',
       text: 'T',
       html: 'H',
+    });
+  });
+
+  it('sends the booking cancellation mail', async () => {
+    const cancelled = {
+      to: 'a@x.com',
+      name: 'An',
+      fieldName: 'F',
+      date: '2030-01-15',
+      startTime: '18:00',
+      endTime: '19:30',
+      lang: 'vi',
+    };
+    await processor.sendBookingCancelled({
+      ...job(),
+      name: 'booking-cancelled',
+      data: cancelled,
+    } as never);
+    expect(templates.bookingCancelled).toHaveBeenCalledWith(cancelled);
+    expect(mailer.send).toHaveBeenCalledWith({
+      to: 'a@x.com',
+      subject: 'C',
+      text: 'CT',
+      html: 'CH',
     });
   });
 

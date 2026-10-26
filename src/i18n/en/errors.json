@@ -27,5 +27,19 @@
   "INVALID_IMAGE": "Only JPEG, PNG or WebP images up to 5MB are allowed",
   "NO_FILES": "No image was uploaded (use the `images` field)",
   "TOO_MANY_IMAGES": "A field can have at most 10 images",
-  "IMAGE_NOT_FOUND": "Image not found"
+  "IMAGE_NOT_FOUND": "Image not found",
+  "VOUCHER_NOT_FOUND": "Voucher code does not exist",
+  "VOUCHER_INACTIVE": "This voucher is no longer active",
+  "VOUCHER_NOT_STARTED": "This voucher is not valid yet",
+  "VOUCHER_EXPIRED": "This voucher has expired",
+  "VOUCHER_EXHAUSTED": "This voucher has been fully used",
+  "VOUCHER_USER_LIMIT": "You have already used this voucher the maximum number of times",
+  "VOUCHER_MIN_ORDER": "The order amount is below the minimum required for this voucher",
+  "SLOT_INVALID": "The time is not a valid bookable slot for this field",
+  "SLOT_IN_PAST": "This slot has already started or passed",
+  "DATE_TOO_FAR": "Bookings can only be made up to 60 days ahead",
+  "SLOT_ALREADY_BOOKED": "This time slot is already booked",
+  "BOOKING_NOT_FOUND": "Booking not found",
+  "BOOKING_NOT_CANCELLABLE": "Only bookings waiting for admin approval can be cancelled",
+  "INVALID_DATE": "Invalid date"
 }

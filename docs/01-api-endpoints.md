@@ -108,14 +108,15 @@ Mail được đẩy vào queue `mail` (Bull + Redis) với 3 lần retry; ngôn
   "openTime": "06:00", "closeTime": "23:00", "avgRating": 4.5, "reviewCount": 12 }
 ```
 
-**2.3 GET /fields/:id/availability?date=2026-11-01**
+**2.3 GET /fields/:id/availability?date=2026-11-01** (public)
 ```json
-{ "date": "2026-11-01", "isWeekend": true, "slots": [
+{ "fieldId": 1, "date": "2026-11-01", "isWeekend": true, "slotMinutes": 90, "slots": [
   { "startTime": "06:00", "endTime": "07:30", "status": "AVAILABLE", "price": 330000 },
-  { "startTime": "07:30", "endTime": "09:00", "status": "BOOKED" },
-  { "startTime": "09:00", "endTime": "10:30", "status": "PENDING" } ] }
+  { "startTime": "07:30", "endTime": "09:00", "status": "BOOKED", "price": 330000 },
+  { "startTime": "09:00", "endTime": "10:30", "status": "PENDING", "price": 330000 },
+  { "startTime": "21:00", "endTime": "22:30", "status": "PAST", "price": 275000 } ] }
 ```
-`status`: `AVAILABLE | PENDING | BOOKED | PAST`.
+`status`: `AVAILABLE | PENDING` (có đơn chờ duyệt) `| BOOKED` (đã xác nhận) `| PAST` (đã qua / đã bắt đầu). `price` đã gồm phụ thu cuối tuần. Ngày không hợp lệ → 400, sân không tồn tại/ẩn → 404.
 
 ---
 
@@ -123,39 +124,38 @@ Mail được đẩy vào queue `mail` (Bull + Redis) với 3 lần retry; ngôn
 
 | # | Method | Endpoint | Quyền | Mô tả |
 |---|--------|----------|-------|-------|
-| 3.1 | POST | `/bookings/preview` | 👤 | Tính giá trước (kèm voucher) |
-| 3.2 | POST | `/bookings` | 👤 | Tạo đơn đặt sân |
-| 3.3 | GET | `/bookings/me` | 👤 | Lịch sử đặt (mới nhất trước) |
-| 3.4 | GET | `/bookings/:id` | 👤 | Chi tiết đơn của mình |
-| 3.5 | PATCH | `/bookings/:id/cancel` | 👤 | Hủy đơn (chỉ khi PENDING), gửi mail |
+| 3.1 | POST | `/bookings/preview` | 👤 | Tính giá + kiểm tra (kể cả voucher), không lưu |
+| 3.2 | POST | `/bookings` | 👤 | Tạo đơn (trạng thái `PENDING`) |
+| 3.3 | GET | `/bookings/me` | 👤 | Lịch sử đặt, mới nhất trước |
+| 3.4 | GET | `/bookings/:id` | 👤 | Chi tiết đơn của mình (đơn người khác → 404) |
+| 3.5 | PATCH | `/bookings/:id/cancel` | 👤 | Hủy đơn (chỉ khi `PENDING`), gửi mail |
 | 3.6 | POST | `/vouchers/validate` | 👤 | Kiểm tra mã giảm giá |
 
 **3.1/3.2 Body**
 ```json
-{ "fieldId": 1, "date": "2026-11-01", "startTime": "18:00", "slots": 1,
-  "voucherCode": "SALE10", "note": "..." }
+{ "fieldId": 1, "date": "2026-11-03", "startTime": "16:30", "slots": 1, "voucherCode": "SALE10", "note": "..." }
 ```
-- `startTime` phải là đầu một slot hợp lệ (06:00, 07:30, ... 21:00); `slots` ≥ 1 (mặc định 1), `endTime` ≤ 23:00; không đặt slot đã qua; không qua đêm.
-- 409 nếu trùng với đơn `PENDING/APPROVED` khác (check trong transaction + lock).
-- 422 voucher hết hạn/hết lượt/không đủ điều kiện.
-- Response 3.1/3.2:
+- `startTime` là đầu một slot (xem availability); `slots` = số slot liên tiếp (1–3, mặc định 1); `endTime` do server tính.
+- Không đặt được slot đã bắt đầu/đã qua (422), ngày quá 60 ngày tới (422), giờ lệch lưới/ngoài giờ mở cửa/vượt giờ đóng (422), sân không tồn tại hoặc ẩn (404).
+- Giá: mỗi slot tính **theo phút** trên các khung giá mà nó đi qua; cuối tuần (T7, CN) đơn giá +10%. `priceBreakdown[].unitPrice` là đơn giá/giờ đã gồm phụ thu, tổng `amount` = `subtotal`.
+- Trùng giờ với đơn `PENDING`/`APPROVED` khác → **409** (DB chặn bằng unique index `booking_slots`, an toàn cả khi nhiều người đặt cùng lúc).
+- Voucher (không phân biệt hoa/thường): 404 không tồn tại; 422 khi tắt, chưa tới/đã quá hạn, hết lượt, đã dùng đủ số lần/người, hoặc đơn chưa đạt giá trị tối thiểu. Giảm theo % có trần `maxDiscount`; không giảm quá tổng tiền. Lượt dùng được trả lại khi đơn bị hủy.
+- Response 3.2 (201):
 ```json
-{ "id": 10, "field": { "id": 1, "name": "Sân A1" }, "date": "2026-11-01",
-  "startTime": "16:30", "endTime": "18:00", "status": "PENDING",
+{ "id": 10, "field": { "id": 1, "name": "Sân A1", "address": "..." }, "date": "2026-11-03",
+  "startTime": "16:30", "endTime": "18:00", "status": "PENDING", "isWeekend": false,
   "priceBreakdown": [ { "from": "16:30", "to": "17:00", "unitPrice": 200000, "minutes": 30, "amount": 100000 },
                       { "from": "17:00", "to": "18:00", "unitPrice": 350000, "minutes": 60, "amount": 350000 } ],
-  "weekendSurchargePercent": 10, "subtotal": 495000, "discount": 49500, "total": 445500,
-  "voucher": { "code": "SALE10" } }
+  "subtotal": 450000, "discount": 45000, "total": 405000, "voucher": { "code": "SALE10" },
+  "note": null, "rejectReason": null, "createdAt": "..." }
 ```
-(3.1 không có `id`/`status`, không lưu DB.)
+- Response 3.1 (200): như trên nhưng không có `id`, `status`, `note`, `createdAt`; thêm `weekendSurchargePercent`.
 
-**3.3 GET /bookings/me** – Query: `status`, `fromDate`, `toDate`, `page`, `limit`. Sort cố định `createdAt desc`.
+**3.3 GET /bookings/me** – Query: `status`, `fromDate`, `toDate` (theo ngày đá), `page`, `limit` (≤ 50). Sort cố định `createdAt desc`. Item: `{ id, field: {id,name,thumbnail}, date, startTime, endTime, status, total, voucherCode, createdAt }`.
 
-**3.5** → 200 đơn với `status: CANCELLED`; 422 nếu status ≠ PENDING; 403 nếu không phải chủ đơn.
+**3.5** → 200 đơn `CANCELLED`; nhả slot, trả lượt voucher; 422 nếu đơn không còn `PENDING` (đã duyệt, đã hủy, ...); 404 nếu không phải đơn của mình. Mail thông báo hủy gửi qua queue theo `Accept-Language`.
 
-**3.6 POST /vouchers/validate** Body `{ "code", "amount" }` → `{ "valid": true, "discount": 70000 }`
-
----
+**3.6 POST /vouchers/validate** Body `{ "code", "amount" }` → `{ "valid": true, "code", "type", "value", "discount", "total" }`.
 
 ## 4. Reviews & Comments
 
