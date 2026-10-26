@@ -41,5 +41,10 @@
   "SLOT_ALREADY_BOOKED": "Khung giờ này đã có người đặt",
   "BOOKING_NOT_FOUND": "Không tìm thấy đơn đặt sân",
   "BOOKING_NOT_CANCELLABLE": "Chỉ hủy được đơn đang chờ admin xác nhận",
-  "INVALID_DATE": "Ngày không hợp lệ"
+  "INVALID_DATE": "Ngày không hợp lệ",
+  "BOOKING_NOT_PENDING": "Chỉ duyệt hoặc từ chối được đơn đang chờ xác nhận",
+  "BOOKING_ALREADY_STARTED": "Đơn này đã đến giờ bắt đầu nên không thể xác nhận nữa",
+  "BOOKING_SLOTS_LOST": "Khung giờ của đơn này không còn được giữ chỗ",
+  "INVALID_DATE_RANGE": "Ngày kết thúc không được trước ngày bắt đầu",
+  "DATE_RANGE_TOO_LONG": "Khoảng ngày tối đa là 62 ngày"
 }

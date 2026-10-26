@@ -41,5 +41,10 @@
   "SLOT_ALREADY_BOOKED": "This time slot is already booked",
   "BOOKING_NOT_FOUND": "Booking not found",
   "BOOKING_NOT_CANCELLABLE": "Only bookings waiting for admin approval can be cancelled",
-  "INVALID_DATE": "Invalid date"
+  "INVALID_DATE": "Invalid date",
+  "BOOKING_NOT_PENDING": "Only bookings waiting for approval can be approved or rejected",
+  "BOOKING_ALREADY_STARTED": "This booking has already started, so it can no longer be approved",
+  "BOOKING_SLOTS_LOST": "The time slots of this booking are no longer reserved",
+  "INVALID_DATE_RANGE": "The end date must not be before the start date",
+  "DATE_RANGE_TOO_LONG": "The date range can span at most 62 days"
 }

@@ -11,6 +11,7 @@ import { AuthService } from './auth.service.js';
 import { AccountToken } from './entities/account-token.entity.js';
 import { RefreshToken } from './entities/refresh-token.entity.js';
 import { RefreshTokensService } from './refresh-tokens.service.js';
+import { TokenCleanupService } from './token-cleanup.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 
 @Module({
@@ -33,6 +34,7 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
     RefreshTokensService,
     AccountTokensService,
     JwtStrategy,
+    TokenCleanupService,
   ],
 })
 export class AuthModule {}

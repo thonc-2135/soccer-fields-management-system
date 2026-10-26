@@ -38,6 +38,7 @@ JWT_SECRET=change-me docker compose --profile app up -d --build
 - Auth: access token 15 phút + refresh token 7 ngày (rotation, lưu hash trong DB); `POST /auth/refresh`.
 - Registration sends an activation email through a Bull queue (`mail`); in dev read it in Mailpit at http://localhost:8025.
 - Time rules (booking in the past, 60-day window) use `APP_TIMEZONE` (default `Asia/Ho_Chi_Minh`).
+- Background jobs (`@nestjs/schedule`): every 5 min cancel PENDING bookings that already started, every 10 min mark finished APPROVED bookings COMPLETED, daily clean up expired tokens. Each job takes a Redis lock, so running several instances is safe.
 - Roles: `@UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.ADMIN)`.
 - Schema is changed only via hand-written migrations (`synchronize: false`).
 

@@ -24,6 +24,22 @@ export class RedisService implements OnModuleDestroy {
     return (await this.client.set(key, value, 'EX', ttlSeconds, 'NX')) === 'OK';
   }
 
+  /**
+   * Runs `job` only if no other instance holds the lock `name` (cron jobs on several replicas).
+   * The lock simply expires after `ttlSeconds`, so a crashed run does not block the next tick.
+   * Returns false when another instance already holds it.
+   */
+  async runExclusive(
+    name: string,
+    ttlSeconds: number,
+    job: () => Promise<unknown>,
+  ): Promise<boolean> {
+    if (!(await this.setIfAbsent(`lock:${name}`, '1', ttlSeconds)))
+      return false;
+    await job();
+    return true;
+  }
+
   async exists(key: string): Promise<boolean> {
     return (await this.client.exists(key)) === 1;
   }

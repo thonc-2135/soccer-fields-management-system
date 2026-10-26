@@ -7,5 +7,11 @@
   "ACTIVATION_IGNORE": "If you did not create an account, you can ignore this email.",
   "GREETING": "Hello {name},",
   "BOOKING_CANCELLED_SUBJECT": "Your booking has been cancelled",
-  "BOOKING_CANCELLED_BODY": "Your booking for {field} on {date} ({start} - {end}) has been cancelled as you requested."
+  "BOOKING_CANCELLED_BODY": "Your booking for {field} on {date} ({start} - {end}) has been cancelled as you requested.",
+  "BOOKING_APPROVED_SUBJECT": "Your booking has been approved",
+  "BOOKING_APPROVED_BODY": "Good news! Your booking for {field} on {date} ({start} - {end}) has been approved. See you on the pitch.",
+  "BOOKING_REJECTED_SUBJECT": "Your booking was not approved",
+  "BOOKING_REJECTED_BODY": "Sorry, your booking for {field} on {date} ({start} - {end}) was rejected. Reason: {reason}",
+  "BOOKING_EXPIRED_SUBJECT": "Your booking has expired",
+  "BOOKING_EXPIRED_BODY": "Your booking for {field} on {date} ({start} - {end}) was cancelled automatically because it was not approved before it started."
 }
