@@ -6,21 +6,21 @@ import { DEFAULT_MAIL_LANG } from '../mail/mail.constants.js';
 import { MailQueueService } from '../mail/mail-queue.service.js';
 import { RedisService } from '../redis/redis.service.js';
 import { toHHmm } from './booking-calendar.js';
+import {
+  CRON_LOCK_SECONDS,
+  EXPIRE_BATCH_SIZE,
+  MAX_EXPIRE_BATCHES,
+} from './booking-tasks.constants.js';
 import { BookingsService } from './bookings.service.js';
-
-const BATCH_SIZE = 200;
-/** Longer than any run should take, shorter than the interval so a crashed run does not block the next. */
-const LOCK_SECONDS = 120;
 
 interface ExpiredBooking {
   id: number;
-  voucher_id: number | null;
-  email: string;
-  name: string;
-  field_name: string;
   booking_date: string;
   start_time: string;
   end_time: string;
+  email: string;
+  name: string;
+  field_name: string;
 }
 
 /** Periodic housekeeping of bookings. Each job takes a Redis lock so only one instance runs it. */
@@ -46,60 +46,74 @@ export class BookingTasksService {
     await this.withLock('complete-finished', () => this.completeFinished());
   }
 
-  /** PENDING bookings whose start time has passed can no longer be approved: cancel them. */
+  /**
+   * PENDING bookings whose start time has passed can no longer be approved: cancel them.
+   * Works in batches; each batch is one transaction with a fixed number of queries
+   * (cancel, free slots, give vouchers back, load mail data), however many bookings it holds.
+   */
   async expirePending(): Promise<number> {
-    const now = this.clock.local();
-    const candidates = (await this.dataSource.query(
-      `SELECT booking.id, booking.voucher_id, booking.booking_date, booking.start_time, booking.end_time,
-              "user".email, "user".name, field.name AS field_name
-       FROM bookings booking
-       JOIN users "user" ON "user".id = booking.user_id
-       JOIN fields field ON field.id = booking.field_id
-       WHERE booking.status = 'PENDING'
-         AND (booking.booking_date < $1 OR (booking.booking_date = $1 AND booking.start_time <= $2::time))
-       ORDER BY booking.id
-       LIMIT ${BATCH_SIZE}`,
-      [now.date, toHHmm(now.minutes)],
-    )) as ExpiredBooking[];
-
     let expired = 0;
-    for (const candidate of candidates) {
-      const cancelled = await this.dataSource.transaction(async (manager) => {
-        // the status condition keeps this safe against an admin deciding the booking right now
-        const updateResult = await manager.query(
-          `UPDATE bookings SET status = 'CANCELLED', updated_at = now()
-           WHERE id = $1 AND status = 'PENDING' RETURNING id`,
-          [candidate.id],
-        );
-        if (!updateResult[0]?.length) return false;
-        await this.bookingsService.releaseResources(
-          manager,
-          candidate.id,
-          candidate.voucher_id,
-        );
-        return true;
-      });
-      if (!cancelled) continue;
-      expired += 1;
-      try {
-        await this.mailQueue.sendBookingExpired({
-          to: candidate.email,
-          name: candidate.name,
-          fieldName: candidate.field_name,
-          date: candidate.booking_date,
-          startTime: candidate.start_time.slice(0, 5),
-          endTime: candidate.end_time.slice(0, 5),
-          lang: DEFAULT_MAIL_LANG,
-        });
-      } catch (error) {
-        this.logger.error(
-          `Could not queue expiry mail for booking ${candidate.id}`,
-          error as Error,
-        );
-      }
+    for (let batch = 0; batch < MAX_EXPIRE_BATCHES; batch += 1) {
+      const cancelled = await this.expireBatch();
+      expired += cancelled;
+      if (cancelled < EXPIRE_BATCH_SIZE) break;
     }
     if (expired) this.logger.log(`Expired ${expired} pending booking(s)`);
     return expired;
+  }
+
+  private async expireBatch(): Promise<number> {
+    const now = this.clock.local();
+    const expired = await this.dataSource.transaction(async (manager) => {
+      // SKIP LOCKED leaves bookings an admin is deciding right now to that admin
+      const [cancelledRows] = (await manager.query(
+        `UPDATE bookings SET status = 'CANCELLED', updated_at = now()
+         WHERE id IN (
+           SELECT id FROM bookings
+           WHERE status = 'PENDING'
+             AND (booking_date < $1 OR (booking_date = $1 AND start_time <= $2::time))
+           ORDER BY id
+           LIMIT ${EXPIRE_BATCH_SIZE}
+           FOR UPDATE SKIP LOCKED
+         ) AND status = 'PENDING'
+         RETURNING id`,
+        [now.date, toHHmm(now.minutes)],
+      )) as [{ id: number }[]];
+      const ids = cancelledRows.map((row) => row.id);
+      if (!ids.length) return [];
+
+      await this.bookingsService.releaseResources(manager, ids);
+      return (await manager.query(
+        `SELECT booking.id, booking.booking_date, booking.start_time, booking.end_time,
+                "user".email, "user".name, field.name AS field_name
+         FROM bookings booking
+         JOIN users "user" ON "user".id = booking.user_id
+         JOIN fields field ON field.id = booking.field_id
+         WHERE booking.id = ANY($1::int[])`,
+        [ids],
+      )) as ExpiredBooking[];
+    });
+
+    try {
+      await this.mailQueue.sendBookingsExpired(
+        expired.map((booking) => ({
+          to: booking.email,
+          name: booking.name,
+          fieldName: booking.field_name,
+          date: booking.booking_date,
+          startTime: booking.start_time.slice(0, 5),
+          endTime: booking.end_time.slice(0, 5),
+          lang: DEFAULT_MAIL_LANG,
+        })),
+      );
+    } catch (error) {
+      // the bookings are already cancelled; a lost notification must not undo that
+      this.logger.error(
+        `Could not queue expiry mails for ${expired.length} booking(s)`,
+        error as Error,
+      );
+    }
+    return expired.length;
   }
 
   /** APPROVED bookings whose end time has passed are done. */
@@ -122,7 +136,7 @@ export class BookingTasksService {
     job: () => Promise<number>,
   ): Promise<void> {
     try {
-      await this.redis.runExclusive(`cron:${name}`, LOCK_SECONDS, job);
+      await this.redis.runExclusive(`cron:${name}`, CRON_LOCK_SECONDS, job);
     } catch (error) {
       // a failed run is simply retried at the next tick
       this.logger.error(`Job ${name} failed`, error as Error);

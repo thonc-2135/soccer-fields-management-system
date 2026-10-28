@@ -455,6 +455,45 @@ describe('Admin bookings (e2e)', () => {
       );
     });
 
+    it('gives voucher uses back for every expired booking in one run', async () => {
+      await db.query(`UPDATE vouchers SET used_count = 2 WHERE code = $1`, [
+        voucherCode,
+      ]);
+      const voucherId = (
+        await db.query(`SELECT id FROM vouchers WHERE code = $1`, [voucherCode])
+      )[0].id;
+      const first = await insertBooking(
+        'u1',
+        inDays(-5),
+        '06:00',
+        '07:30',
+        'PENDING',
+      );
+      const second = await insertBooking(
+        'u2',
+        inDays(-5),
+        '07:30',
+        '09:00',
+        'PENDING',
+      );
+      await db.query(`UPDATE bookings SET voucher_id = $1 WHERE id = ANY($2)`, [
+        voucherId,
+        [first, second],
+      ]);
+
+      await app.get(BookingTasksService).expirePending();
+
+      expect(await statusOf(first)).toBe('CANCELLED');
+      expect(await statusOf(second)).toBe('CANCELLED');
+      expect(
+        (
+          await db.query(`SELECT used_count FROM vouchers WHERE id = $1`, [
+            voucherId,
+          ])
+        )[0].used_count,
+      ).toBe(0);
+    });
+
     it('completes approved bookings that have finished', async () => {
       const done = await insertBooking(
         'u1',

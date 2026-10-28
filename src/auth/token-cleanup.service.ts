@@ -34,9 +34,11 @@ export class TokenCleanupService {
     accountTokens: number;
     refreshTokens: number;
   }> {
+    // account_tokens: hashed single-use email activation tokens (type ACTIVATION)
     const [, accountTokens] = await this.dataSource.query(
       `DELETE FROM account_tokens WHERE expires_at < now()`,
     );
+    // refresh_tokens: hashed login refresh tokens
     const [, refreshTokens] = await this.dataSource.query(
       `DELETE FROM refresh_tokens WHERE expires_at < now() - interval '1 day'`,
     );

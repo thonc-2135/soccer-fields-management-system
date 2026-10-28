@@ -32,7 +32,10 @@ export class MailQueueService {
     await this.queue.add(MailJob.BOOKING_REJECTED, data);
   }
 
-  async sendBookingExpired(data: BookingExpiredMailData): Promise<void> {
-    await this.queue.add(MailJob.BOOKING_EXPIRED, data);
+  async sendBookingsExpired(items: BookingExpiredMailData[]): Promise<void> {
+    if (!items.length) return;
+    await this.queue.addBulk(
+      items.map((data) => ({ name: MailJob.BOOKING_EXPIRED, data })),
+    );
   }
 }

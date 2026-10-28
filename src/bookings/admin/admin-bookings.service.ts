@@ -17,25 +17,20 @@ import type { User } from '../../users/entities/user.entity.js';
 import { addDays, isValidDate } from '../booking-calendar.js';
 import { BookingsService } from '../bookings.service.js';
 import { Booking } from '../entities/booking.entity.js';
-import { toBookingDetail } from '../mappers/booking-response.mapper.js';
+import {
+  toAdminBookingDetail,
+  toAdminBookingListItem,
+  toCalendarEntry,
+} from '../mappers/admin-booking-response.mapper.js';
+import { hhmm } from '../mappers/booking-response.mapper.js';
 import type {
   AdminBookingDetail,
   AdminBookingListItem,
   CalendarEntry,
 } from '../types/admin-booking.types.js';
+import { MAX_CALENDAR_DAYS, SORT_COLUMNS } from './admin-bookings.constants.js';
 import type { CalendarQueryDto } from './dto/calendar-query.dto.js';
 import type { ListAdminBookingsQueryDto } from './dto/list-admin-bookings-query.dto.js';
-
-export const MAX_CALENDAR_DAYS = 62;
-
-const SORT_COLUMNS = {
-  'createdAt:desc': ['booking.created_at', 'DESC'],
-  'createdAt:asc': ['booking.created_at', 'ASC'],
-  'date:desc': ['booking.booking_date', 'DESC'],
-  'date:asc': ['booking.booking_date', 'ASC'],
-} as const;
-
-const hhmm = (time: string) => time.slice(0, 5);
 
 @Injectable()
 export class AdminBookingsService {
@@ -52,11 +47,10 @@ export class AdminBookingsService {
   async findAll(
     query: ListAdminBookingsQueryDto,
   ): Promise<PaginatedResult<AdminBookingListItem>> {
-    const queryBuilder = this.bookings
-      .createQueryBuilder('booking')
-      .innerJoinAndSelect('booking.user', 'user')
-      .innerJoinAndSelect('booking.field', 'field')
-      .leftJoinAndSelect('booking.voucher', 'voucher');
+    const queryBuilder = this.createBookingQuery().leftJoinAndSelect(
+      'booking.voucher',
+      'voucher',
+    );
     if (query.status)
       queryBuilder.andWhere('booking.status = :status', {
         status: query.status,
@@ -104,22 +98,7 @@ export class AdminBookingsService {
       .getManyAndCount();
 
     return {
-      data: rows.map((booking) => ({
-        id: booking.id,
-        user: {
-          id: booking.user.id,
-          name: booking.user.name,
-          email: booking.user.email,
-        },
-        field: { id: booking.field.id, name: booking.field.name },
-        date: booking.bookingDate,
-        startTime: hhmm(booking.startTime),
-        endTime: hhmm(booking.endTime),
-        status: booking.status,
-        total: booking.total,
-        voucherCode: booking.voucher?.code ?? null,
-        createdAt: booking.createdAt,
-      })),
+      data: rows.map(toAdminBookingListItem),
       meta: buildMeta(query.page, query.limit, total),
     };
   }
@@ -136,18 +115,7 @@ export class AdminBookingsService {
       },
     });
     if (!booking) throw new NotFoundException('errors.BOOKING_NOT_FOUND');
-    return {
-      ...toBookingDetail(booking),
-      user: {
-        id: booking.user.id,
-        name: booking.user.name,
-        email: booking.user.email,
-        phone: booking.user.phone,
-      },
-      handledBy: booking.handler
-        ? { id: booking.handler.id, name: booking.handler.name }
-        : null,
-    };
+    return toAdminBookingDetail(booking);
   }
 
   /** Every booking that occupies (or occupied) the pitch in the date range, for the calendar view. */
@@ -159,10 +127,7 @@ export class AdminBookingsService {
     if (query.to > addDays(query.from, MAX_CALENDAR_DAYS - 1))
       throw new UnprocessableEntityException('errors.DATE_RANGE_TOO_LONG');
 
-    const queryBuilder = this.bookings
-      .createQueryBuilder('booking')
-      .innerJoinAndSelect('booking.user', 'user')
-      .innerJoinAndSelect('booking.field', 'field')
+    const queryBuilder = this.createBookingQuery()
       .where('booking.booking_date BETWEEN :from AND :to', {
         from: query.from,
         to: query.to,
@@ -184,15 +149,7 @@ export class AdminBookingsService {
       .addOrderBy('booking.start_time', 'ASC')
       .addOrderBy('booking.id', 'ASC')
       .getMany();
-    return rows.map((booking) => ({
-      bookingId: booking.id,
-      fieldId: booking.field.id,
-      fieldName: booking.field.name,
-      user: { id: booking.user.id, name: booking.user.name },
-      start: `${booking.bookingDate}T${hhmm(booking.startTime)}`,
-      end: `${booking.bookingDate}T${hhmm(booking.endTime)}`,
-      status: booking.status,
-    }));
+    return rows.map(toCalendarEntry);
   }
 
   async approve(
@@ -255,11 +212,7 @@ export class AdminBookingsService {
           handledBy: admin.id,
         },
       );
-      await this.bookingsService.releaseResources(
-        manager,
-        id,
-        locked.voucherId,
-      );
+      await this.bookingsService.releaseResources(manager, [id]);
       return locked;
     });
 
@@ -292,6 +245,14 @@ export class AdminBookingsService {
     if (booking.status !== BookingStatus.PENDING)
       throw new UnprocessableEntityException('errors.BOOKING_NOT_PENDING');
     return booking;
+  }
+
+  /** Bookings joined with their customer and field, the base of every admin listing. */
+  private createBookingQuery() {
+    return this.bookings
+      .createQueryBuilder('booking')
+      .innerJoinAndSelect('booking.user', 'user')
+      .innerJoinAndSelect('booking.field', 'field');
   }
 
   private mailDetails(booking: Booking) {
