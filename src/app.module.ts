@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
@@ -59,6 +60,7 @@ import { UsersModule } from './users/users.module.js';
         },
       }),
     }),
+    EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
     ClockModule,
     RedisModule,

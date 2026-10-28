@@ -46,5 +46,10 @@
   "BOOKING_ALREADY_STARTED": "Đơn này đã đến giờ bắt đầu nên không thể xác nhận nữa",
   "BOOKING_SLOTS_LOST": "Khung giờ của đơn này không còn được giữ chỗ",
   "INVALID_DATE_RANGE": "Ngày kết thúc không được trước ngày bắt đầu",
-  "DATE_RANGE_TOO_LONG": "Khoảng ngày tối đa là 62 ngày"
+  "DATE_RANGE_TOO_LONG": "Khoảng ngày tối đa là 62 ngày",
+  "REVIEW_NOT_FOUND": "Không tìm thấy đánh giá",
+  "REVIEW_REQUIRES_BOOKING": "Chỉ khách đã có đơn đặt được xác nhận hoặc hoàn thành ở sân này mới được đánh giá",
+  "REVIEW_ALREADY_EXISTS": "Bạn đã đánh giá sân này rồi",
+  "COMMENT_NOT_FOUND": "Không tìm thấy bình luận",
+  "NOTHING_TO_UPDATE": "Hãy gửi ít nhất một trường cần cập nhật"
 }

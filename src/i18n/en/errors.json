@@ -46,5 +46,10 @@
   "BOOKING_ALREADY_STARTED": "This booking has already started, so it can no longer be approved",
   "BOOKING_SLOTS_LOST": "The time slots of this booking are no longer reserved",
   "INVALID_DATE_RANGE": "The end date must not be before the start date",
-  "DATE_RANGE_TOO_LONG": "The date range can span at most 62 days"
+  "DATE_RANGE_TOO_LONG": "The date range can span at most 62 days",
+  "REVIEW_NOT_FOUND": "Review not found",
+  "REVIEW_REQUIRES_BOOKING": "Only customers with an approved or completed booking at this field can review it",
+  "REVIEW_ALREADY_EXISTS": "You have already reviewed this field",
+  "COMMENT_NOT_FOUND": "Comment not found",
+  "NOTHING_TO_UPDATE": "Send at least one field to update"
 }
