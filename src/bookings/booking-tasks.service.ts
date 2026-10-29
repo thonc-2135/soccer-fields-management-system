@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DataSource } from 'typeorm';
 import { ClockService } from '../common/clock/clock.service.js';
+import { ActivityType } from '../common/enums/activity-type.enum.js';
 import { DEFAULT_MAIL_LANG } from '../mail/mail.constants.js';
 import { MailQueueService } from '../mail/mail-queue.service.js';
 import { RedisService } from '../redis/redis.service.js';
@@ -11,10 +13,13 @@ import {
   EXPIRE_BATCH_SIZE,
   MAX_EXPIRE_BATCHES,
 } from './booking-tasks.constants.js';
+import { emitBookingActivity } from './booking-activity.js';
 import { BookingsService } from './bookings.service.js';
 
 interface ExpiredBooking {
   id: number;
+  user_id: number;
+  field_id: number;
   booking_date: string;
   start_time: string;
   end_time: string;
@@ -34,6 +39,7 @@ export class BookingTasksService {
     private readonly redis: RedisService,
     private readonly bookingsService: BookingsService,
     private readonly mailQueue: MailQueueService,
+    private readonly events: EventEmitter2,
   ) {}
 
   @Cron(CronExpression.EVERY_5_MINUTES, { name: 'expire-pending-bookings' })
@@ -84,7 +90,7 @@ export class BookingTasksService {
 
       await this.bookingsService.releaseResources(manager, ids);
       return (await manager.query(
-        `SELECT booking.id, booking.booking_date, booking.start_time, booking.end_time,
+        `SELECT booking.id, booking.user_id, booking.field_id, booking.booking_date, booking.start_time, booking.end_time,
                 "user".email, "user".name, field.name AS field_name
          FROM bookings booking
          JOIN users "user" ON "user".id = booking.user_id
@@ -94,6 +100,21 @@ export class BookingTasksService {
       )) as ExpiredBooking[];
     });
 
+    for (const booking of expired) {
+      emitBookingActivity(
+        this.events,
+        ActivityType.BOOKING_CANCELLED,
+        {
+          id: booking.id,
+          userId: booking.user_id,
+          fieldId: booking.field_id,
+          bookingDate: booking.booking_date,
+          startTime: booking.start_time,
+          endTime: booking.end_time,
+        },
+        { reason: 'EXPIRED' },
+      );
+    }
     try {
       await this.mailQueue.sendBookingsExpired(
         expired.map((booking) => ({

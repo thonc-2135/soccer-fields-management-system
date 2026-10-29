@@ -5,15 +5,18 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { ClockService } from '../../common/clock/clock.service.js';
 import { buildMeta } from '../../common/dto/pagination-query.dto.js';
+import { ActivityType } from '../../common/enums/activity-type.enum.js';
 import { BookingStatus } from '../../common/enums/booking-status.enum.js';
 import type { PaginatedResult } from '../../common/interceptors/response.interceptor.js';
 import { escapeLike } from '../../common/utils/escape-like.util.js';
 import { MailQueueService } from '../../mail/mail-queue.service.js';
 import type { User } from '../../users/entities/user.entity.js';
+import { emitBookingActivity } from '../booking-activity.js';
 import { addDays, isValidDate } from '../booking-calendar.js';
 import { BookingsService } from '../bookings.service.js';
 import { Booking } from '../entities/booking.entity.js';
@@ -42,6 +45,7 @@ export class AdminBookingsService {
     private readonly clock: ClockService,
     private readonly bookingsService: BookingsService,
     private readonly mailQueue: MailQueueService,
+    private readonly events: EventEmitter2,
   ) {}
 
   async findAll(
@@ -186,6 +190,7 @@ export class AdminBookingsService {
       return locked;
     });
 
+    emitBookingActivity(this.events, ActivityType.BOOKING_APPROVED, booking);
     await this.notify(id, () =>
       this.mailQueue.sendBookingApproved({
         ...this.mailDetails(booking),
@@ -216,6 +221,9 @@ export class AdminBookingsService {
       return locked;
     });
 
+    emitBookingActivity(this.events, ActivityType.BOOKING_REJECTED, booking, {
+      reason,
+    });
     await this.notify(id, () =>
       this.mailQueue.sendBookingRejected({
         ...this.mailDetails(booking),

@@ -163,14 +163,19 @@ Mail được đẩy vào queue `mail` (Bull + Redis) với 3 lần retry; ngôn
 |---|--------|----------|-------|-------|
 | 4.1 | POST | `/fields/:id/reviews` | 👤 | Đánh giá sân |
 | 4.2 | PATCH | `/reviews/:id` | 👤 | Sửa review của mình |
-| 4.3 | DELETE | `/reviews/:id` | 👤🛡 | Xóa review (chủ review hoặc admin) |
+| 4.3 | DELETE | `/reviews/:id` | 👤🛡 | Xóa review (chủ review hoặc admin), 204 |
 | 4.4 | POST | `/reviews/:id/comments` | 👤 | Bình luận / trả lời bình luận |
 | 4.5 | GET | `/reviews/:id/comments` | 🌐 | Cây bình luận |
-| 4.6 | DELETE | `/comments/:id` | 👤🛡 | Xóa bình luận |
+| 4.6 | DELETE | `/comments/:id` | 👤🛡 | Xóa bình luận (chủ comment hoặc admin), 204 |
+| 4.7 | GET | `/fields/:id/reviews` | 🌐 | Danh sách review của sân (bổ sung ngoài đề) |
 
-**4.1 Body** `{ "rating": 1-5, "content": string }` – 403 nếu chưa có booking `APPROVED/COMPLETED` ở sân này; 409 nếu đã đánh giá (1 review/user/sân – cần chốt).
-**4.4 Body** `{ "content": string, "parentId"?: number }` (parentId = comment cha → bình luận của bình luận).
-**4.5 Response**: `[ { "id", "content", "user": {id,name,avatar}, "createdAt", "replies": [ ... ] } ]`, phân trang theo comment gốc.
+**4.1 Body** `{ "rating": 1-5, "content": string (≤ 2000) }` – 403 nếu chưa có booking `APPROVED/COMPLETED` ở sân này (`PENDING` chưa đủ điều kiện); 409 nếu đã đánh giá (1 review/user/sân; review đã xóa mềm không chặn review mới); 404 nếu sân không tồn tại. `avg_rating`/`review_count` của sân được tính lại trong cùng transaction (khóa dòng sân để 2 review cùng lúc không làm lệch số).
+**4.2 Body** `{ "rating"?, "content"? }` (ít nhất 1 trường, 400 nếu rỗng) – 403 nếu không phải review của mình. Tính lại rating sân.
+**4.3** Xóa mềm + tính lại rating sân; 403 nếu không phải chủ review/admin.
+**4.4 Body** `{ "content": string (≤ 1000), "parentId"?: number }` – mọi user đã đăng nhập đều được bình luận. Chỉ 2 cấp: trả lời một reply thì gắn vào bình luận gốc của nó. 404 nếu `parentId` không thuộc review này.
+**4.5 Response**: `[ { "id", "reviewId", "parentId", "content", "user": {id,name,avatar}, "createdAt", "replies": [ ... ] } ]`, phân trang (`page`, `limit`) theo comment gốc, cũ nhất trước; mỗi comment gốc kèm toàn bộ reply.
+**4.6** Xóa mềm comment và các reply của nó.
+**4.7 Query**: `rating` (lọc theo số sao), `page`, `limit`. Item: `{ id, fieldId, rating, content, user: {id,name,avatar}, commentCount, createdAt, updatedAt }`, mới nhất trước.
 
 ---
 
@@ -182,7 +187,8 @@ Mail được đẩy vào queue `mail` (Bull + Redis) với 3 lần retry; ngôn
 | 5.2 | DELETE | `/fields/:id/favorite` | 👤 | Bỏ yêu thích |
 | 5.3 | GET | `/favorites` | 👤 | Danh sách sân yêu thích (phân trang) |
 
-5.1/5.2 idempotent → `{ "data": { "fieldId": 1, "isFavorite": true } }`.
+5.1/5.2 idempotent → `{ "data": { "fieldId": 1, "isFavorite": true } }` (cả hai trả 200). 5.1 trả 404 nếu sân không tồn tại; 5.2 luôn thành công. Activity chỉ được ghi khi trạng thái thật sự đổi.
+5.3 Item: `{ id, name, address, type: {id,name}, thumbnail, avgRating, reviewCount, favoritedAt }`, thêm gần nhất trước, chỉ gồm sân đang `ACTIVE`.
 
 ---
 
@@ -192,9 +198,10 @@ Mail được đẩy vào queue `mail` (Bull + Redis) với 3 lần retry; ngôn
 |---|--------|----------|-------|-------|
 | 6.1 | GET | `/activities/me` | 👤 | Timeline của mình, mới nhất trước |
 
-Query: `type` (`BOOKING_CREATED, BOOKING_CANCELLED, BOOKING_APPROVED, BOOKING_REJECTED, REVIEW_CREATED, COMMENT_CREATED, FAVORITE_ADDED, FAVORITE_REMOVED`), `fromDate`, `toDate`, `page`, `limit`.
-Item: `{ "id", "type", "createdAt", "field": {id,name}, "refId", "metadata": {} }`.
-Ghi log bằng event (`@nestjs/event-emitter`) từ các service, không chặn request.
+Query: `type` (`BOOKING_CREATED, BOOKING_CANCELLED, BOOKING_APPROVED, BOOKING_REJECTED, REVIEW_CREATED, COMMENT_CREATED, FAVORITE_ADDED, FAVORITE_REMOVED`), `fromDate`, `toDate` (theo ngày `APP_TIMEZONE`), `page`, `limit`.
+Item: `{ "id", "type", "createdAt", "field": {id,name} | null, "refType", "refId", "metadata": {} }`.
+`refType`/`refId`: `booking`, `review`, `comment`, `field`. `metadata` ví dụ: booking → `{date,startTime,endTime,total?,reason?}`; review → `{rating}`; comment → `{reviewId,parentId}`.
+Ghi log bằng event (`@nestjs/event-emitter`, sự kiện `activity.record`) từ các service sau khi hành động đã thành công; listener ghi bất đồng bộ nên lỗi ghi log không ảnh hưởng request. Đơn của khách được admin duyệt/từ chối hoặc tự hết hạn (cron) vào timeline của khách (hết hạn = `BOOKING_CANCELLED` kèm `metadata.reason = "EXPIRED"`).
 
 ---
 

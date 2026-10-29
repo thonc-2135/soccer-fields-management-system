@@ -6,6 +6,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   DataSource,
@@ -16,6 +17,7 @@ import {
 } from 'typeorm';
 import { ClockService } from '../common/clock/clock.service.js';
 import { buildMeta } from '../common/dto/pagination-query.dto.js';
+import { ActivityType } from '../common/enums/activity-type.enum.js';
 import { BookingStatus } from '../common/enums/booking-status.enum.js';
 import { FieldStatus } from '../common/enums/field-status.enum.js';
 import type { PaginatedResult } from '../common/interceptors/response.interceptor.js';
@@ -36,6 +38,7 @@ import {
   toHHmm,
   toMinutes,
 } from './booking-calendar.js';
+import { emitBookingActivity } from './booking-activity.js';
 import type { AvailabilityQueryDto } from './dto/availability-query.dto.js';
 import type { CreateBookingDto } from './dto/create-booking.dto.js';
 import type { ListMyBookingsQueryDto } from './dto/list-my-bookings-query.dto.js';
@@ -65,6 +68,7 @@ export class BookingsService {
     private readonly vouchers: VouchersService,
     private readonly fieldsService: FieldsService,
     private readonly mailQueue: MailQueueService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /** Slots of one day with their state and price, for the booking calendar. */
@@ -225,6 +229,10 @@ export class BookingsService {
         );
         return booking.id;
       });
+      const created = await this.bookings.findOneByOrFail({ id });
+      emitBookingActivity(this.events, ActivityType.BOOKING_CREATED, created, {
+        total: created.total,
+      });
       return await this.getDetail(id, user.id);
     } catch (error) {
       if (this.isSlotConflict(error))
@@ -304,6 +312,7 @@ export class BookingsService {
         );
       await this.releaseResources(manager, [booking.id]);
     });
+    emitBookingActivity(this.events, ActivityType.BOOKING_CANCELLED, booking);
 
     try {
       await this.mailQueue.sendBookingCancelled({

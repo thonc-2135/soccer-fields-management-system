@@ -22,9 +22,9 @@ ERD: [02-erd.drawio](02-erd.drawio) (mở bằng draw.io / diagrams.net). DB: My
 2. **Snapshot giá:** `booking_price_items` lưu giá từng đoạn (pro-rata theo phút) tại thời điểm đặt, nên đổi `field_prices` sau này không làm sai đơn cũ. `bookings` cũng lưu `subtotal/discount/total`.
 3. **Giá:** `field_prices` theo khung giờ (17-21h đắt nhất, admin cấu hình). Cuối tuần +10% lấy từ `settings.weekend_surcharge_percent`; `slot_minutes=90`.
 4. **Điều kiện review:** kiểm tra user có booking `APPROVED/COMPLETED` ở sân đó; `UNIQUE(user_id, field_id)` trên `reviews`.
-5. **Denormalize:** `fields.avg_rating`, `review_count` cập nhật khi thêm/sửa/xóa review để list sân không phải `AVG()` mỗi lần.
+5. **Denormalize:** `fields.avg_rating`, `review_count` được tính lại từ `reviews` mỗi khi thêm/sửa/xóa review, trong cùng transaction và sau khi khóa dòng sân (`FOR UPDATE`) để các review đồng thời không ghi đè số của nhau.
 6. **Comment lồng nhau:** `parent_id` tự tham chiếu (adjacency list); API dựng cây 2 cấp trên một query theo `review_id`.
-7. **Timeline:** `activities` ghi bằng event, append-only; đọc theo `(user_id, created_at DESC)`.
+7. **Timeline:** `activities` ghi bằng event (`@nestjs/event-emitter`) sau khi hành động thành công, append-only; đọc theo `(user_id, created_at DESC)`.
 8. **Trạng thái đơn:** `PENDING → APPROVED/REJECTED/CANCELLED`, `APPROVED → COMPLETED`. Chuyển trạng thái luôn khóa dòng booking hoặc dùng `UPDATE … WHERE status = 'PENDING'` để duyệt/hủy đồng thời không thể cùng thắng; slot (`booking_slots`) giữ từ lúc PENDING và chỉ nhả khi REJECTED/CANCELLED.
 9. **Soft delete** (`deleted_at`) cho `users`, `fields`, `reviews`, `comments`. Xóa sân chặn nếu còn booking PENDING/APPROVED có `booking_date >= hôm nay`.
 10. **Token:** chỉ lưu hash của token kích hoạt/refresh, không lưu plaintext.
