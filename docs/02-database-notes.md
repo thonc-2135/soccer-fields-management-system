@@ -25,8 +25,9 @@ ERD: [02-erd.drawio](02-erd.drawio) (mở bằng draw.io / diagrams.net). DB: My
 5. **Denormalize:** `fields.avg_rating`, `review_count` cập nhật khi thêm/sửa/xóa review để list sân không phải `AVG()` mỗi lần.
 6. **Comment lồng nhau:** `parent_id` tự tham chiếu (adjacency list); API dựng cây 2 cấp trên một query theo `review_id`.
 7. **Timeline:** `activities` ghi bằng event, append-only; đọc theo `(user_id, created_at DESC)`.
-8. **Soft delete** (`deleted_at`) cho `users`, `fields`, `reviews`, `comments`. Xóa sân chặn nếu còn booking PENDING/APPROVED có `booking_date >= hôm nay`.
-9. **Token:** chỉ lưu hash của token kích hoạt/refresh, không lưu plaintext.
+8. **Trạng thái đơn:** `PENDING → APPROVED/REJECTED/CANCELLED`, `APPROVED → COMPLETED`. Chuyển trạng thái luôn khóa dòng booking hoặc dùng `UPDATE … WHERE status = 'PENDING'` để duyệt/hủy đồng thời không thể cùng thắng; slot (`booking_slots`) giữ từ lúc PENDING và chỉ nhả khi REJECTED/CANCELLED.
+9. **Soft delete** (`deleted_at`) cho `users`, `fields`, `reviews`, `comments`. Xóa sân chặn nếu còn booking PENDING/APPROVED có `booking_date >= hôm nay`.
+10. **Token:** chỉ lưu hash của token kích hoạt/refresh, không lưu plaintext.
 
 ## Index đề xuất
 | Bảng | Index |

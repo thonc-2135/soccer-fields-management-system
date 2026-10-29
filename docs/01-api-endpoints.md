@@ -208,9 +208,13 @@ Ghi log bằng event (`@nestjs/event-emitter`) từ các service, không chặn 
 | 7.4 | PATCH | `/admin/bookings/:id/reject` | 🛡 | Từ chối (`{ "reason" }`), gửi mail |
 | 7.5 | GET | `/admin/bookings/calendar?from=&to=&fieldId=` | 🛡 | Dữ liệu hiển thị trực quan (calendar) |
 
-7.1 Query: `status`, `fieldId`, `userId`, `fromDate`, `toDate` (theo ngày đá), `createdFrom`, `createdTo` (theo ngày đặt), `keyword` (tên/email user), `page`, `limit`, `sort`.
-7.3/7.4: chỉ khi `PENDING`, ngược lại 422. Re-check trùng giờ khi approve.
-7.5 Response: `[ { "bookingId", "fieldId", "fieldName", "user": {id,name}, "start": "2026-11-01T18:00", "end": "2026-11-01T20:00", "status" } ]`.
+7.1 Query: `status`, `fieldId`, `userId`, `fromDate`, `toDate` (theo ngày đá), `createdFrom`, `createdTo` (theo ngày đặt, tính theo múi giờ `APP_TIMEZONE`), `keyword` (tên – không phân biệt dấu – hoặc email user), `page`, `limit`, `sort` (`createdAt:desc` mặc định, `createdAt:asc`, `date:desc`, `date:asc`).
+Item: `{ id, user:{id,name,email}, field:{id,name}, date, startTime, endTime, status, total, voucherCode, createdAt }`.
+7.2 Chi tiết như đơn của user (kèm `priceBreakdown`, `rejectReason`) + `user:{id,name,email,phone}`, `handledBy:{id,name}|null`.
+7.3/7.4: chỉ khi `PENDING`, ngược lại 422 (`BOOKING_NOT_PENDING`). Hai thao tác khóa dòng booking (`FOR UPDATE`) nên admin duyệt và user hủy cùng lúc thì chỉ một bên thành công, bên kia nhận 422.
+- Approve: 422 nếu đã đến giờ bắt đầu (`BOOKING_ALREADY_STARTED`); 409 nếu slot không còn được giữ (`BOOKING_SLOTS_LOST`). Slot được giữ ngay từ lúc đặt (PENDING) nên không thể bị người khác chiếm. Ghi `handled_by`, gửi mail "đã duyệt".
+- Reject: body `{ "reason" }` (bắt buộc, ≤ 255 ký tự). Nhả slot + hoàn lại lượt voucher, lưu `reject_reason`, gửi mail kèm lý do.
+7.5 Query: `from`, `to` (bắt buộc, `YYYY-MM-DD`, tối đa 62 ngày), `fieldId` (tùy chọn – dùng cho lịch theo từng sân). Chỉ trả đơn `PENDING/APPROVED/COMPLETED`. Response: `[ { "bookingId", "fieldId", "fieldName", "user": {id,name}, "start": "2026-11-01T18:00", "end": "2026-11-01T19:30", "status" } ]`.
 
 ## 8. Admin – Fields (CRUD)
 
@@ -267,11 +271,13 @@ Không cho admin tự khóa chính mình.
 
 | Job | Kỹ thuật | Mô tả |
 |-----|----------|-------|
-| Mail kích hoạt, mail hủy đơn, mail duyệt/từ chối | `@nestjs/bull` + Redis | Đẩy vào queue `mail` |
-| Auto `COMPLETED` booking sau giờ đá | `@nestjs/schedule` (Cron mỗi 15 phút) | |
-| Auto hủy/hết hạn đơn PENDING quá hạn (vd 24h) | `@nestjs/schedule` | Tùy chọn, cần chốt |
-| Xóa token kích hoạt hết hạn | `@nestjs/schedule` (hằng ngày) | |
+| Mail kích hoạt, hủy đơn, duyệt, từ chối, đơn hết hạn | `@nestjs/bull` + Redis | Đẩy vào queue `mail` |
+| Auto `COMPLETED` booking sau giờ đá | `@nestjs/schedule` (Cron mỗi 10 phút) | `APPROVED` đã qua giờ kết thúc → `COMPLETED` |
+| Auto hủy đơn PENDING chưa được duyệt mà đã đến giờ đá | `@nestjs/schedule` (Cron mỗi 5 phút) | → `CANCELLED`, nhả slot + voucher, gửi mail "hết hạn" |
+| Xóa token hết hạn | `@nestjs/schedule` (3h sáng hằng ngày) | Token kích hoạt hết hạn; refresh token hết hạn quá 1 ngày (giữ lại để phát hiện dùng lại token) |
 | Seeder (admin, field types, fields, vouchers) | CLI `nest-commander` | `npm run seed` |
+
+Mỗi cron job lấy khóa Redis (`lock:cron:<tên>`) trước khi chạy, nên chạy nhiều instance cũng chỉ một instance xử lý ở mỗi lượt.
 
 ## 12. Ma trận phân quyền tóm tắt
 

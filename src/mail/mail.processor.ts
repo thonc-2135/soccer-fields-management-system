@@ -5,7 +5,10 @@ import {
   MAIL_QUEUE,
   MailJob,
   type ActivationMailData,
+  type BookingApprovedMailData,
   type BookingCancelledMailData,
+  type BookingExpiredMailData,
+  type BookingRejectedMailData,
   type MailJobData,
 } from './mail.constants.js';
 import {
@@ -34,6 +37,21 @@ export class MailProcessor {
     job: Job<BookingCancelledMailData>,
   ): Promise<void> {
     await this.deliver(job, this.templates.bookingCancelled(job.data));
+  }
+
+  @Process(MailJob.BOOKING_APPROVED)
+  async sendBookingApproved(job: Job<BookingApprovedMailData>): Promise<void> {
+    await this.deliver(job, this.templates.bookingApproved(job.data));
+  }
+
+  @Process(MailJob.BOOKING_REJECTED)
+  async sendBookingRejected(job: Job<BookingRejectedMailData>): Promise<void> {
+    await this.deliver(job, this.templates.bookingRejected(job.data));
+  }
+
+  @Process(MailJob.BOOKING_EXPIRED)
+  async sendBookingExpired(job: Job<BookingExpiredMailData>): Promise<void> {
+    await this.deliver(job, this.templates.bookingExpired(job.data));
   }
 
   /** Called after every failed attempt; only the last one is an actual give-up. */

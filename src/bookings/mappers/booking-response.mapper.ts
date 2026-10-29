@@ -32,7 +32,7 @@ export interface BookingListItem {
   createdAt: Date;
 }
 
-const hhmm = (time: string) => time.slice(0, 5);
+export const hhmm = (time: string) => time.slice(0, 5);
 
 /** Expects `field`, `voucher` and `priceItems` to be loaded. */
 export function toBookingDetail(booking: Booking): BookingDetail {

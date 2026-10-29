@@ -7,5 +7,11 @@
   "ACTIVATION_IGNORE": "Nếu bạn không đăng ký tài khoản, hãy bỏ qua email này.",
   "GREETING": "Xin chào {name},",
   "BOOKING_CANCELLED_SUBJECT": "Đơn đặt sân của bạn đã được hủy",
-  "BOOKING_CANCELLED_BODY": "Đơn đặt sân {field} ngày {date} ({start} - {end}) đã được hủy theo yêu cầu của bạn."
+  "BOOKING_CANCELLED_BODY": "Đơn đặt sân {field} ngày {date} ({start} - {end}) đã được hủy theo yêu cầu của bạn.",
+  "BOOKING_APPROVED_SUBJECT": "Đơn đặt sân của bạn đã được xác nhận",
+  "BOOKING_APPROVED_BODY": "Tin vui! Đơn đặt sân {field} ngày {date} ({start} - {end}) đã được xác nhận. Hẹn gặp bạn trên sân.",
+  "BOOKING_REJECTED_SUBJECT": "Đơn đặt sân của bạn không được chấp nhận",
+  "BOOKING_REJECTED_BODY": "Rất tiếc, đơn đặt sân {field} ngày {date} ({start} - {end}) đã bị từ chối. Lý do: {reason}",
+  "BOOKING_EXPIRED_SUBJECT": "Đơn đặt sân của bạn đã hết hạn",
+  "BOOKING_EXPIRED_BODY": "Đơn đặt sân {field} ngày {date} ({start} - {end}) đã bị hủy tự động vì không được xác nhận trước giờ bắt đầu."
 }

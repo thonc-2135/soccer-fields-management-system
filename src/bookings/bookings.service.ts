@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   DataSource,
   EntityManager,
+  In,
   QueryFailedError,
   Repository,
 } from 'typeorm';
@@ -301,7 +302,7 @@ export class BookingsService {
         throw new UnprocessableEntityException(
           'errors.BOOKING_NOT_CANCELLABLE',
         );
-      await this.releaseResources(manager, booking.id, booking.voucherId);
+      await this.releaseResources(manager, [booking.id]);
     });
 
     try {
@@ -324,19 +325,26 @@ export class BookingsService {
     return this.getDetail(id, user.id);
   }
 
-  /** Frees the time slots and gives the voucher use back (cancelled / rejected bookings). */
+  /**
+   * Frees the time slots and gives the voucher use back for cancelled / rejected / expired
+   * bookings. Takes many ids so batch jobs need a constant number of queries.
+   */
   async releaseResources(
     manager: EntityManager,
-    bookingId: number,
-    voucherId: number | null,
+    bookingIds: number[],
   ): Promise<void> {
-    await manager.delete(BookingSlot, { bookingId });
-    if (voucherId !== null) {
-      await manager.query(
-        'UPDATE vouchers SET used_count = GREATEST(used_count - 1, 0) WHERE id = $1',
-        [voucherId],
-      );
-    }
+    if (!bookingIds.length) return;
+    await manager.delete(BookingSlot, { bookingId: In(bookingIds) });
+    await manager.query(
+      `UPDATE vouchers SET used_count = GREATEST(vouchers.used_count - usage.count, 0)
+       FROM (
+         SELECT voucher_id, COUNT(*)::int AS count FROM bookings
+         WHERE id = ANY($1::int[]) AND voucher_id IS NOT NULL
+         GROUP BY voucher_id
+       ) usage
+       WHERE vouchers.id = usage.voucher_id`,
+      [bookingIds],
+    );
   }
 
   private async buildQuote(
